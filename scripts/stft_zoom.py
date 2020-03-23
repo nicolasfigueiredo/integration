@@ -131,33 +131,60 @@ def subsample_signal(y, new_sr, sr):
     subsample_step = int(np.ceil(sr/new_sr)) # pegar 1 em cada subsample_step amostras de y
     return y[::subsample_step], sr/subsample_step  # sinal subamostrado, new_sr
 
-def analyze_slice(y, freq_range, sr, freq_res_type, freq_res, time_res_type, time_res):
+# def analyze_slice(y, freq_range, sr, freq_res_type, freq_res, time_res_type, time_res):
+#     # devolve matriz da FFT de y no intervalo freq_range, time_range de acordo com alguma
+#     # "heuristica de resolução", por ex: quero 10 bins de freq nesse intervalo, 10 frames de tempo
+#     if freq_res_type == 'freq. bins':
+#         freq_res_hz = (freq_range[1] - freq_range[0]) / freq_res
+#         window_size = int(sr // freq_res_hz)
+#     else: # freq res specified in Hz per bin
+#         window_size = int(sr // freq_res)
+
+#     if window_size > len(y):
+#         window_size = len(y) 
+        
+#     if time_res == 0:
+#         hop_size = window_size // 4
+#     elif time_res_type == 'time frames':
+#         hop_size = int(len(y) / time_res)
+#     else:
+#         hop_size = int(sr*time_res/1000)
+
+#     return np.abs(librosa.stft(y, n_fft=window_size, hop_length=hop_size))
+
+# def stft_zoom(y, freq_range, time_range, sr, freq_res_type='freq. bins', freq_res=40, time_res_type='time frames', time_res=0):
+#     inverted = False
+#     y_mod, new_sr, f_min, inverted = filter_and_mod(slice_signal(y, time_range, sr), freq_range, sr)
+#     y_sub, new_sr = subsample_signal(y_mod, new_sr, sr)
+
+#     D = analyze_slice(y_sub, freq_range, new_sr, freq_res_type, freq_res, time_res_type, time_res)
+    
+#     if type(f_min) is list: # undersampling que inverteu o espectro entre f_min[0] e f_min[1]
+#         ws = f_min[0]
+#         new_freq_range = f_min[1]        
+#         f_min = ws[0] - new_freq_range[0]
+#         x_axis, y_axis = get_axes_values(new_sr, f_min, time_range, D.shape)
+#         D = unmirror(D, y_axis, ws)        
+#     else:
+#         x_axis, y_axis = get_axes_values(new_sr, f_min, time_range, D.shape)
+
+#     return D, x_axis, y_axis
+
+def analyze_slice(y, new_sr, original_resolution, k=2):
     # devolve matriz da FFT de y no intervalo freq_range, time_range de acordo com alguma
     # "heuristica de resolução", por ex: quero 10 bins de freq nesse intervalo, 10 frames de tempo
-    if freq_res_type == 'freq. bins':
-        freq_res_hz = (freq_range[1] - freq_range[0]) / freq_res
-        window_size = int(sr // freq_res_hz)
-    else: # freq res specified in Hz per bin
-        window_size = int(sr // freq_res)
+    new_resolution = original_resolution / k
+    window_size = int(new_sr / new_resolution)
+    hop_size = window_size // 4
+    return np.abs(librosa.stft(y, n_fft=window_size, hop_length=hop_size)), window_size, hop_size
 
-    if window_size > len(y):
-        window_size = len(y) 
-        
-    if time_res == 0:
-        hop_size = window_size // 4
-    elif time_res_type == 'time frames':
-        hop_size = int(len(y) / time_res)
-    else:
-        hop_size = int(sr*time_res/1000)
-
-    return np.abs(librosa.stft(y, n_fft=window_size, hop_length=hop_size))
-
-def stft_zoom(y, freq_range, time_range, sr, freq_res_type='freq. bins', freq_res=40, time_res_type='time frames', time_res=0):
+def stft_zoom(y, freq_range, time_range, sr=44100, original_window_size=2048, k=2):
     inverted = False
     y_mod, new_sr, f_min, inverted = filter_and_mod(slice_signal(y, time_range, sr), freq_range, sr)
     y_sub, new_sr = subsample_signal(y_mod, new_sr, sr)
 
-    D = analyze_slice(y_sub, freq_range, new_sr, freq_res_type, freq_res, time_res_type, time_res)
+    original_resolution = sr / original_window_size
+    D, new_window_size, new_hop_size = analyze_slice(y_sub, new_sr, original_resolution, k=k)
     
     if type(f_min) is list: # undersampling que inverteu o espectro entre f_min[0] e f_min[1]
         ws = f_min[0]
@@ -168,7 +195,7 @@ def stft_zoom(y, freq_range, time_range, sr, freq_res_type='freq. bins', freq_re
     else:
         x_axis, y_axis = get_axes_values(new_sr, f_min, time_range, D.shape)
 
-    return D, x_axis, y_axis
+    return D, x_axis, y_axis, new_sr, new_window_size, new_hop_size
 
 def unmirror(D, y_axis, freq_range):
     i_start = np.searchsorted(y_axis, freq_range[0])

@@ -100,7 +100,7 @@ def fft_frequencies(sr=44100, n_fft=2048):
 def find_freq_list(fft_freqs, delta_f_c):
 #     freq_list = [fft_freqs[0]]
     idx_list = [0]
-    freq_step = fft_freqs[1]
+    freq_step = fft_freqs[1] - fft_freqs[0]
     
     f1 = fft_freqs[1]
     f2 = f1 * 2 ** (delta_f_c/1200) 
@@ -117,8 +117,11 @@ def find_freq_list(fft_freqs, delta_f_c):
         
     return idx_list
 
-def calc_map_aug2(spectrogram, kernel_dimensions, n_fft=2048, hop_size=512, sr=44100, type='dp', alpha=3):
-    idx_list = find_freq_list(fft_frequencies(sr=sr, n_fft=n_fft), kernel_dimensions[1])
+def calc_map_aug2(spectrogram, kernel_dimensions, n_fft=2048, hop_size=512, sr=44100, type='dp', alpha=3, fft_freqs=None):
+    if fft_freqs is None:
+        idx_list = find_freq_list(fft_frequencies(sr=sr, n_fft=n_fft), kernel_dimensions[1]) # essa linha: 
+    else:
+        idx_list = find_freq_list(fft_freqs, kernel_dimensions[1]) # para calcular mapa de regiões refinadas, já passamos o eixo de frequências     
 
     delta_t_ms = kernel_dimensions[0]   # dimensão em ms
     # delta_f_c = kernel_dimensions[1]   # dimensão em cents
@@ -128,19 +131,10 @@ def calc_map_aug2(spectrogram, kernel_dimensions, n_fft=2048, hop_size=512, sr=4
 
     mapping = np.zeros([len(idx_list)-1, spectrogram.shape[1]//delta_t])
     
-    
-    # fft_freq = fft_frequencies(sr=sr, n_fft=n_fft)
-    # fft_freq_step = fft_freq[1] # intervalo em Hz entre bins do spec
-   
-    
     j = 0
     j_map = 0
 
     while j < spectrogram.shape[1] - delta_t:
-        # idx_f1 = 0
-        # idx_f2 = idx_list[1]
- 
-        # while idx_f2 < spectrogram.shape[0]:
         for i_map in range(len(idx_list)-1):
             subregion = spectrogram[idx_list[i_map]:idx_list[i_map+1], j:j+delta_t]
             if type=='std dev':
