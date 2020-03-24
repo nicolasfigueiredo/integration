@@ -98,17 +98,19 @@ def fft_frequencies(sr=44100, n_fft=2048):
 # Devolve a lista de freqs que determinam os intervalos musicais em cents
 # Ex: entre fft_freqs[idx_list[i]] e fft_freqs[idx_list[i+1]] há um intervalo de delta_f_c cents 
 def find_freq_list(fft_freqs, delta_f_c):
-#     freq_list = [fft_freqs[0]]
     idx_list = [0]
     freq_step = fft_freqs[1] - fft_freqs[0]
     
-    f1 = fft_freqs[1]
+    if fft_freqs[0] < 0.0001:   # then fft_freqs[0] == 0, estamos analisando o espectrograma inteiro
+        f1 = fft_freqs[1]
+    else:
+        f1 = fft_freqs[0]
+    
     f2 = f1 * 2 ** (delta_f_c/1200) 
     idx_f1 = 0
     idx_f2 = int(np.ceil((f2)/freq_step))
-    
+        
     while idx_f2 < len(fft_freqs):
-#         freq_list.append(fft_freqs[idx_f2])
         idx_list.append(idx_f2)
         idx_f1 = idx_f2
         f1 = fft_freqs[idx_f1]
@@ -124,10 +126,10 @@ def calc_map_aug2(spectrogram, kernel_dimensions, n_fft=2048, hop_size=512, sr=4
         idx_list = find_freq_list(fft_freqs, kernel_dimensions[1]) # para calcular mapa de regiões refinadas, já passamos o eixo de frequências     
 
     delta_t_ms = kernel_dimensions[0]   # dimensão em ms
-    # delta_f_c = kernel_dimensions[1]   # dimensão em cents
 
-    ms_per_frame = (n_fft+hop_size) * 1000 / (sr*2)   # discussão
-    delta_t = int(np.ceil(delta_t_ms / ms_per_frame))
+    # ms_per_frame = (n_fft+hop_size) * 1000 / (sr*2)   # discussão
+    ms_per_frame = hop_size * 1000 / sr
+    delta_t = int(np.round(delta_t_ms / ms_per_frame))
 
     mapping = np.zeros([len(idx_list)-1, spectrogram.shape[1]//delta_t])
     

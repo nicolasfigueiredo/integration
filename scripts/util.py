@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 def find_nearest(array, value):
     idx = np.searchsorted(array, value, side="left")
