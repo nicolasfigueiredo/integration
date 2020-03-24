@@ -15,8 +15,9 @@ def detect_musical_regions(model, spectrogram, mode='threshold', pct_or_threshol
     
     renyi = mappings.calc_map_aug2(spec_amp, kernel, type='renyi', n_fft=n_fft, hop_size=hop_size, sr=sr, fft_freqs=y_axis)
     shannon = mappings.calc_map_aug2(spec_db, kernel, type='shannon', n_fft=n_fft, hop_size=hop_size, sr=sr, fft_freqs=y_axis)
-    
+    print(shannon.shape)
     X = np.array([shannon.flatten(), renyi.flatten()]).T
+    print(X.shape)
     predicted_probs = model.predict_proba(X)
     
     if mode == 'threshold':
@@ -58,19 +59,14 @@ def musical_regions_to_ranges(indices, original_shape, x_axis, y_axis, kernel, s
     return ranges
 
 def insert_zoom(spec_img, zoom, time_range, freq_range, x_axis, y_axis):
-    # tem uma redundância com x_axis e time_range...
     # TEM QUE CORTAR O ZOOM ANTES DE INSERIR
 
-    # y_axis = fft_frequencies(sr=sr, n_fft=n_fft)
-    # x_axis = librosa.core.frames_to_time(list(range(base_spec_shape)), sr=sr, hop_length=hop_size)
-    
     x_start = find_nearest(x_axis, time_range[0])
     x_end   = find_nearest(x_axis, time_range[1])
     y_start = find_nearest(y_axis, freq_range[0])
     y_end   = find_nearest(y_axis, freq_range[1])
     
     zoom_img = PIL.Image.fromarray(zoom).resize((x_end - x_start,y_end - y_start))
-#     spec_img = PIL.Image.fromarray(base_spec).resize((base_spec.shape[1] * 3,base_spec.shape[0] * 3))
     box = (x_start, y_start, x_end, y_end)
     spec_img.paste(zoom_img, box)
     

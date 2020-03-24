@@ -108,7 +108,7 @@ def find_freq_list(fft_freqs, delta_f_c):
     
     f2 = f1 * 2 ** (delta_f_c/1200) 
     idx_f1 = 0
-    idx_f2 = int(np.ceil((f2)/freq_step))
+    idx_f2 = int(np.ceil((f2 - f1)/freq_step))
         
     while idx_f2 < len(fft_freqs):
         idx_list.append(idx_f2)
@@ -125,6 +125,7 @@ def calc_map_aug2(spectrogram, kernel_dimensions, n_fft=2048, hop_size=512, sr=4
     else:
         idx_list = find_freq_list(fft_freqs, kernel_dimensions[1]) # para calcular mapa de regiões refinadas, já passamos o eixo de frequências     
 
+    print(idx_list)
     delta_t_ms = kernel_dimensions[0]   # dimensão em ms
 
     # ms_per_frame = (n_fft+hop_size) * 1000 / (sr*2)   # discussão

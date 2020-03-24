@@ -1,6 +1,7 @@
 import scipy.signal
 import numpy as np
 import librosa
+from util import *
 
 def compose_alpha_list(sr):
 	alpha_list = []
@@ -195,7 +196,11 @@ def stft_zoom(y, freq_range, time_range, sr=44100, original_window_size=2048, k=
     else:
         x_axis, y_axis = get_axes_values(new_sr, f_min, time_range, D.shape)
 
-    return D, x_axis, y_axis, new_sr, new_window_size, new_hop_size
+    # Aqui, cortamos o espectrograma só na faixa de frequẽncias especificada
+    y_start = find_nearest(y_axis, freq_range[0])
+    y_end   = find_nearest(y_axis, freq_range[1])
+
+    return D[y_start:y_end,:], x_axis, y_axis[y_start:y_end], new_sr, new_window_size, new_hop_size
 
 def unmirror(D, y_axis, freq_range):
     i_start = np.searchsorted(y_axis, freq_range[0])
