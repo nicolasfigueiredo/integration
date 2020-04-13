@@ -3,18 +3,25 @@ import numpy as np
 import math
 from skimage.transform import resize
 
-#timestamp: pega 30 segundos do meio do piano roll
+# This script contains functions that convert a midi file into 3 possible options:
+# 1) A binary piano roll matrix, with no velocity information;
+# 2) A binary piano roll + harmonics matrix, with no velocity information;
+# 3) A piano roll + harmonics + energy decay over time and frequency matrix (defined by us as an "augmented" piano roll).
+
 def midi_to_piano_roll_augmented(midi_file, timestamp):
+    # From a midi file, build an "augmented" piano roll
+
+    #timestamp: used to extract only 30 seconds counted from the halfway point of the performance
     ticks_in_track = np.ceil(mido.second2tick(midi_file.length, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
     decay_per_tick = 28 / mido.second2tick(1, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat)
     
-    piano_roll = np.zeros([128, int(ticks_in_track)])   # fazer piano roll com eixo x em ticks e y em midi note number
-    # linha 127 é a do pedal!!
+    piano_roll = np.zeros([128, int(ticks_in_track)])   # piano roll with x axis labeled by ticks and y axis labeled by midi note number
+    # roll 127 is the sustain pedal
 
     time = 0
     pedal_flag = 0           # 1 if sustain pedal is pressed, 0 otherwise
 
-    # faz mapa de note ons e note offs
+    # Maps note ons and note offs (note offs are noted in the file as note on with velocity==0)
     for msg in midi_file.tracks[1]:
         time += msg.time
         if msg.type == 'note_on':
@@ -23,108 +30,108 @@ def midi_to_piano_roll_augmented(midi_file, timestamp):
             else: # note-off
                 piano_roll[msg.note][time] = -1
         elif msg.type == 'control_change':
-            if pedal_flag == 0 and msg.value>0: # o pedal manda diversas mensagens durante uma única pressionada
+            if pedal_flag == 0 and msg.value>0: # pedal sends several messages during one pressing motion
                 piano_roll[127][time] = 1
                 pedal_flag = 1
             elif pedal_flag == 1 and msg.value == 0:
                 piano_roll[127][time] = 1
                 pedal_flag = 0
                 
-    # faz ''linha do tempo'' do pedal (trata os note ons e offs, criando um piano roll para o pedal)
+    # compose a sustain pedal ''timeline'' (processes note on/offs, creating a piano roll line for the pedal)
     pedal_flag = 0
     for j in range(piano_roll.shape[1]):
         if piano_roll[127,j] == 1:
             pedal_flag = int(not pedal_flag)
         piano_roll[127,j] = pedal_flag
     
-    keypress_flag = 0  # indica se tecla está pressionada
-    note_vel = 0    # indica se nota está soando
-    noteon_flag = 0
-    pedal_flag = 0     # indica se pedal está pressionado
+    keypress_flag = 0  # indicated if key is pressed
+    note_vel = 0    
+    noteon_flag = 0    # indicates if note is sounding (key could be depressed but sustain pedal carries it on)
+    pedal_flag = 0     # indicates if pedal is pressed
     
     for i in range(127):
-        if np.sum(piano_roll[i, :] != 0):   # se tiver alguma nota nessa linha
+        if np.sum(piano_roll[i, :] != 0):   # if there is any note in this roll
             note_vel = 0
             noteon_flag = 0
             pedal_flag = 0
             keypress_flag = 0
             for j in range(piano_roll.shape[1]):
-                if piano_roll[i,j] > 0:    # nota foi pressionada
+                if piano_roll[i,j] > 0:    # key was pressed
                     keypress_flag = 1
                     note_vel = piano_roll[i,j]
-                elif piano_roll[i,j] == -1:   # achou um note-off
+                elif piano_roll[i,j] == -1:   # note-off was found
                     keypress_flag = 0
 
                 pedal_flag = piano_roll[127,j]
-                noteon_flag = keypress_flag or (pedal_flag and noteon_flag) # nota soa quando tecla é pressionada 
-                                                                            # ou quando já estava soando e pedal está pressionado
+                noteon_flag = keypress_flag or (pedal_flag and noteon_flag) # note can be heard when key is pressed 
+                                                                            # or when it was already sounding and the pedal is pressed
                 if noteon_flag:
                     piano_roll[i,j] = note_vel
                 
-                note_vel -= decay_per_tick
+                note_vel -= decay_per_tick # simple energy decay model
                 if note_vel < 0:
                     noteon_flag = 0
                     note_vel = 0
                 
+    # Return only 30 seconds
     start_time = int(mido.second2tick(timestamp, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
     stop_time  = int(mido.second2tick(timestamp+30, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
     return piano_roll[:127,start_time:stop_time]
 
 def midi_to_piano_roll(midi_file, timestamp):
+    # Converts a MIDI file into simple binary piano roll, follows same structure as midi_to_piano_roll_augmented()
     ticks_in_track = np.ceil(mido.second2tick(midi_file.length, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
     
-    piano_roll = np.zeros([128, int(ticks_in_track)])   # fazer piano roll com eixo x em ticks e y em midi note number
-    # linha 127 é a do pedal!!
-
+    piano_roll = np.zeros([128, int(ticks_in_track)])
+    
     time = 0
-    pedal_flag = 0           # 1 if sustain pedal is pressed, 0 otherwise
+    pedal_flag = 0
 
-    # faz mapa de note ons e note offs
+    # Note on/off mapping
     for msg in midi_file.tracks[1]:
         time += msg.time
         if msg.type == 'note_on':
             piano_roll[msg.note][time] = 1
         elif msg.type == 'control_change':
-            if pedal_flag == 0 and msg.value>0: # o pedal manda diversas mensagens durante uma única pressionada
+            if pedal_flag == 0 and msg.value>0:
                 piano_roll[127][time] = 1
                 pedal_flag = 1
             elif pedal_flag == 1 and msg.value == 0:
                 piano_roll[127][time] = 1
                 pedal_flag = 0
                 
-    # faz ''linha do tempo'' do pedal (trata os note ons e offs, criando um piano roll para o pedal)
+    # compose a sustain pedal ''timeline'' (processes note on/offs, creating a piano roll line for the pedal)
     pedal_flag = 0
     for j in range(piano_roll.shape[1]):
         if piano_roll[127,j] == 1:
             pedal_flag = int(not pedal_flag)
         piano_roll[127,j] = pedal_flag
     
-    keypress_flag = 0  # indica se tecla está pressionada
-    noteon_flag = 0    # indica se nota está soando
-    pedal_flag = 0     # indica se pedal está pressionado
+    keypress_flag = 0
+    noteon_flag = 0  
+    pedal_flag = 0    
     
     for i in range(127):
-        if np.sum(piano_roll[i, :] != 0):   # se tiver alguma nota nessa linha
+        if np.sum(piano_roll[i, :] != 0):
             noteon_flag = 0
             pedal_flag = 0
             keypress_flag = 0
             for j in range(piano_roll.shape[1]):
-                if piano_roll[i,j] == 1 and keypress_flag == 0:    # nota foi pressionada
+                if piano_roll[i,j] == 1 and keypress_flag == 0:
                     keypress_flag = 1
-                elif piano_roll[i,j] == 1 and keypress_flag:   # achou um note-off
+                elif piano_roll[i,j] == 1 and keypress_flag:
                     keypress_flag = 0
 
                 pedal_flag = piano_roll[127,j]
-                noteon_flag = keypress_flag or (pedal_flag and noteon_flag) # nota soa quando tecla é pressionada 
-                                                                            # ou quando já estava soando e pedal está pressionado
+                noteon_flag = keypress_flag or (pedal_flag and noteon_flag) 
+                                                                           
                 piano_roll[i,j] = noteon_flag
                 
     start_time = int(mido.second2tick(timestamp, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
     stop_time  = int(mido.second2tick(timestamp+30, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
     return piano_roll[:127,start_time:stop_time]
     
-# LEMBRAR DO ''MASCARAMENTO'': SELECIONAR EVENTO MÁXIMO QUE CAI NO BIN
-
+# Helper function
 def filter_negatives(x):
     if x < 0:
         return 0
@@ -134,29 +141,18 @@ def filter_negatives(x):
 f_neg = np.vectorize(filter_negatives)
 
 def compose_sound_event_map_aug(piano_roll, n_harmonics=7):
-    new_piano_roll = np.zeros([piano_roll.shape[0]+n_harmonics*12, piano_roll.shape[1]])
-    
+    # Takes a piano roll and augments it with n_harmonics for each note, with a simple decay model
+    new_piano_roll = np.zeros([piano_roll.shape[0]+n_harmonics*12, piano_roll.shape[1]])    
     for i in range(127):
-<<<<<<< HEAD
-        new_piano_roll[i] = np.max([new_piano_roll[i], piano_roll[i]], axis=0) # isso pq overtones podem cair em cima de linhas que tenham notas
+        new_piano_roll[i] = np.max([new_piano_roll[i], piano_roll[i]], axis=0) # overtones can fall on top of lines already containing notes
         for j in range(1,n_harmonics+1):
-            partial = piano_roll[i] - 7.86 * j  # atenuação de velocity por harmônico
+            partial = piano_roll[i] - 7.86 * j  # velocity atenuation per harmonic
             new_piano_roll[i+12*j] = np.max([new_piano_roll[i+12*j], partial], axis=0)            
-
-                    # if note_vel < 0:
-                    # noteon_flag = 0
-                    # note_vel = 0
-=======
-        new_piano_roll[i] = np.max([new_piano_roll[i], piano_roll[i]], axis=0)
-        for j in range(1,n_harmonics+1):
-            partial = piano_roll[i] - 7.86 * j  # atenuação por harmônico
-            new_piano_roll[i+12*j] = np.max([new_piano_roll[i+12*j], partial], axis=0)
-            
->>>>>>> 159f00e833569a016ac0b637559b80166a4d0aea
-        
     return f_neg(new_piano_roll) / 127
 
 def compose_sound_event_map(piano_roll, n_harmonics=7):
+    # Same as compose_sound_event_map(), but with no decay model 
+    # (merge functions later)
     new_piano_roll = np.zeros([piano_roll.shape[0]+n_harmonics*12, piano_roll.shape[1]])
     
     for i in range(127):
@@ -166,6 +162,22 @@ def compose_sound_event_map(piano_roll, n_harmonics=7):
         
     return (new_piano_roll > 0).astype(int)
 
+# Converts from MIDI note x ticks axes to freq. bin x time frame axes, according to an n_fft and hop_size
+def sound_event_to_tfp(sound_event_map, num_time_frames, n_fft=2048):
+    midi_freqs = build_midi_freqs(sound_event_map.shape[0])
+    fft_freqs = fft_frequencies(n_fft=n_fft)
+    tfp_pianoroll = np.zeros([fft_freqs.shape[0] , sound_event_map.shape[1]])
+    
+    for i in range(len(midi_freqs)):
+        idx = find_nearest_idx(fft_freqs, midi_freqs[i])
+        tfp_pianoroll[idx] = sound_event_map[i]
+        
+    tfp_pianoroll = resize(tfp_pianoroll, [tfp_pianoroll.shape[0],num_time_frames])
+    
+    return tfp_pianoroll
+
+
+# Helper functions below
 def fft_frequencies(sr=44100, n_fft=2048):
     return np.linspace(0,
                        float(sr) / 2,
@@ -183,24 +195,9 @@ def build_midi_freqs(number_midi_notes):
         midi_freqs.append(midi_to_hz(i))
     return midi_freqs
 
-# Acha o indice do elemento de array mais perto de value
 def find_nearest_idx(array,value):
     idx = np.searchsorted(array, value, side="left")
     if idx > 0 and (idx == len(array) or math.fabs(value - array[idx-1]) < math.fabs(value - array[idx])):
         return idx-1
     else:
         return idx
-
-# Passa dos eixos nota midi x sound ticks para freq. bin x time frame, de acordo com um n_fft e hop_size definidos
-def sound_event_to_tfp(sound_event_map, num_time_frames, n_fft=2048):
-    midi_freqs = build_midi_freqs(sound_event_map.shape[0])
-    fft_freqs = fft_frequencies(n_fft=n_fft)
-    tfp_pianoroll = np.zeros([fft_freqs.shape[0] , sound_event_map.shape[1]])
-    
-    for i in range(len(midi_freqs)):
-        idx = find_nearest_idx(fft_freqs, midi_freqs[i])
-        tfp_pianoroll[idx] = sound_event_map[i]
-        
-    tfp_pianoroll = resize(tfp_pianoroll, [tfp_pianoroll.shape[0],num_time_frames])
-    
-    return tfp_pianoroll
