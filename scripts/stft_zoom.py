@@ -127,7 +127,7 @@ def analyze_slice(y, new_sr, original_resolution, k=2):
     new_resolution = original_resolution / k
     window_size = int(new_sr / new_resolution)
     hop_size = window_size // 4
-    return np.abs(librosa.stft(y, n_fft=window_size, hop_length=hop_size)), window_size, hop_size
+    return np.abs(librosa.stft(np.asfortranarray(y), n_fft=window_size, hop_length=hop_size)), window_size, hop_size
 
 def unmirror(stft_zoom, y_axis, freq_range):
 #   Unmirror spectrum originally mirrored by the undersampling process
@@ -152,6 +152,35 @@ def stft_zoom(y, freq_range, time_range, sr=44100, original_window_size=2048, k=
 
     original_resolution = sr / original_window_size
     stft_zoom, new_window_size, new_hop_size = analyze_slice(y_sub, new_sr, original_resolution, k=k)
+    
+    if type(f_min) is list: # undersampling inverted the spectrum between f_min[0] and f_min[1]
+        ws = f_min[0]
+        new_freq_range = f_min[1]        
+        f_min = ws[0] - new_freq_range[0]
+        x_axis, y_axis = get_axes_values(new_sr, f_min, time_range, stft_zoom.shape)
+        stft_zoom = unmirror(stft_zoom, y_axis, ws)        
+    else:
+        x_axis, y_axis = get_axes_values(new_sr, f_min, time_range, stft_zoom.shape)
+
+    # Slice the spectrogram in order to represent only the specified frequency range
+    # ("guard bands" are used in the bandpass and lowpass filters in order to not distort the frequency
+    # band specified)
+    y_start = find_nearest(y_axis, freq_range[0])
+    y_end   = find_nearest(y_axis, freq_range[1])
+
+    # stft matrix, x axis, y axis, new sampling rate, window size and hop size used in this new STFT
+    return stft_zoom[y_start:y_end,:], x_axis, y_axis[y_start:y_end], new_sr, new_window_size, new_hop_size
+
+def stft_zoom_2D(y, freq_range, time_range, sr=44100, original_window_size=2048, k=2):
+    # Returns an STFT representation of the interval freq_range x time_range of signal y with
+    # its frequency resolution determined by the factor k
+
+    inverted = False # suppose that the spectrum is not inverted to begin with (it could be if undersampling is performed)
+    y_mod, new_sr, f_min, inverted = filter_and_mod(slice_signal(y, time_range, sr), freq_range, sr)
+    y_sub, new_sr = subsample_signal(y_mod, new_sr, sr)
+
+    original_resolution = sr / original_window_size
+    stft_zoom, new_window_size, new_hop_size = analyze_slice_2D(y_sub, new_sr, original_resolution, k=k)
     
     if type(f_min) is list: # undersampling inverted the spectrum between f_min[0] and f_min[1]
         ws = f_min[0]
