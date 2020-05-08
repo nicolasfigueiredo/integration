@@ -126,8 +126,9 @@ def analyze_slice(y, new_sr, original_resolution, k=2):
     # determined by the factor k: new_resolution = k * original_resolution
     new_resolution = original_resolution / k
     window_size = int(new_sr / new_resolution)
-    hop_size = window_size // 4
-    return np.abs(librosa.stft(np.asfortranarray(y), n_fft=window_size, hop_length=hop_size)), window_size, hop_size
+    # hop_size = window_size // 4
+    hop_size = window_size # to test normalization
+    return np.abs(librosa.stft(np.asfortranarray(y), n_fft=window_size, hop_length=hop_size, window='boxcar')), window_size, hop_size
 
 def unmirror(stft_zoom, y_axis, freq_range):
 #   Unmirror spectrum originally mirrored by the undersampling process
