@@ -75,7 +75,7 @@ def midi_to_piano_roll_augmented(midi_file, timestamp):
                 
     # Return only 30 seconds
     start_time = int(mido.second2tick(timestamp, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
-    stop_time  = int(mido.second2tick(timestamp+30, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
+    stop_time  = int(mido.second2tick(timestamp+20, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
     return piano_roll[:127,start_time:stop_time]
 
 def midi_to_piano_roll(midi_file, timestamp):

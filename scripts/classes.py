@@ -21,6 +21,10 @@ class MultiResSpectrogram(object):
         y_start = find_nearest(base_spec.y_axis, zoom_spec.y_axis[0])
         y_end   = find_nearest(base_spec.y_axis, zoom_spec.y_axis[-1])
         
+        norm_factor = np.max(base_spec.spec[y_start:y_end, x_start:x_end]) / np.max(zoom_spec.spec)
+        zoom_spec.spec = zoom_spec.spec * norm_factor
+        print(norm_factor)
+
         base_spec.spec[y_start:y_end, x_start:x_end] = zoom_spec
         zoom_spec.parent = base_spec
         
