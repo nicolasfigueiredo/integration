@@ -65,16 +65,16 @@ def calc_map_aug2(spectrogram, kernel_dimensions, n_fft=2048, hop_size=512, sr=4
             subregion = spectrogram[idx_list[i_map]:idx_list[i_map+1], j:j+delta_t]
             if type=='std dev':
                 mapping[i_map, j_map] = np.std(subregion)
-            elif type=='var':
-                mapping[i_map, j_map] = np.var(subregion)
-            if type=='dp':
-                mapping[i_map, j_map] = np.sqrt(np.var(subregion))
-            elif type=='avg':
-                mapping[i_map, j_map] = np.mean(subregion)
             elif type=='shannon':
                 mapping[i_map, j_map] = shannon_entropy(subregion)
             elif type=='renyi':
                 mapping[i_map, j_map] = renyi_entropy(subregion, alpha=alpha)
+            elif type=='var':
+                mapping[i_map, j_map] = np.var(subregion)
+            elif type=='dp':
+                mapping[i_map, j_map] = np.sqrt(np.var(subregion))
+            elif type=='avg':
+                mapping[i_map, j_map] = np.mean(subregion)
             elif type=='maxmin':
                 mapping[i_map, j_map] = np.max(subregion) - np.min(subregion)
         j += delta_t
