@@ -2,6 +2,7 @@ import scipy.signal
 import numpy as np
 import librosa
 from util import *
+import mappings
 
 # This script contains all functions that perform subband processing in order to compute a low cost STFT
 # representation of a specific region (frequency band x time interval) of a signal. The main function in
@@ -37,11 +38,11 @@ def filter_and_mod(y, freq_range, sr):
 
     inverted = False # if undersampling is performed with an even 'n', the spectrum is mirrored and will be unmirrored afterwards
 
-    if freq_range[0] <= 200:
+    if freq_range[0] <= 400:
         return filter_lowpass(y, freq_range[1], sr), 2*(freq_range[1]+100), 0, inverted
       
-    wp = np.array([freq_range[0] - 50, freq_range[1] + 50]) # lower freq. for bandpass filter 
-    ws = np.array([wp[0] - 50, wp[1] + 150]) # higher freq. for bandpass filter
+    wp = np.array([freq_range[0] - 100, freq_range[1] + 100]) # passbands 
+    ws = np.array([wp[0] - 150, wp[1] + 200]) # stopbands
 
     new_sr = find_undersample_fs(ws) # if new_sr, an undersampling frequency was found
 
@@ -66,11 +67,14 @@ def filter_and_mod(y, freq_range, sr):
     return y_filt, new_sr[0], ws[0]*(sr/2) - new_freq_range[0], inverted
 
 def filter_bandpass(y, wp, ws, sr):
-    N, wn = scipy.signal.buttord(wp, ws, 3, 30)
+    N, wn = scipy.signal.buttord(wp, ws, 3, 20)
+    print("N = ", N)
     sos = scipy.signal.butter(N, wn, 'band', output='sos')
     return scipy.signal.sosfilt(sos, y)
 
 def filter_lowpass(y, f_c, sr):
+    if f_c >= sr/2:
+        f_c = sr/2.001
     anti_alias = scipy.signal.ellip(7, 3, 80, f_c / (sr/2), output='sos')
     return scipy.signal.sosfilt(anti_alias, y)
     
@@ -137,21 +141,65 @@ def unmirror(stft_zoom, y_axis, freq_range):
 
 def get_axes_values(sr, f_min, time_range, spec_shape):
     x_axis = np.linspace(time_range[0], time_range[1], spec_shape[1])
-    f_max = f_min + (sr / 2)
+    f_max  = f_min + (sr / 2)
     y_axis = np.linspace(f_min, f_max, spec_shape[0])
     return x_axis, y_axis
+
+def make_signal_bank(y, kernel_size, sr=44100, n_fft=2048):
+    # Make bank of filtered signals according to kernel size
+    # Signals from 400Hz to 4000kHz
+
+    y_bank = []
+
+    fft_freqs = mappings.fft_frequencies(sr=sr, n_fft=n_fft)
+    idx_list = mappings.find_freq_list(fft_freqs, kernel_size[1]) # essa linha:
+    freq_list = fft_freqs[idx_list]
+    y_bank = []
+    freq_range = [0,0]
+    
+    idx_start = find_nearest(freq_list, 100)
+    idx_stop  = find_nearest(freq_list, 3000)
+
+    for i in range(idx_start, idx_stop):
+        freq_range[0] = freq_list[i]
+        freq_range[1] = freq_list[i+1]
+
+        y_bank.append(filter_and_mod(y, freq_range, sr=sr))
+
+    bank_idx = freq_list[list(range(idx_start, idx_stop))]
+    return y_bank, bank_idx
+
+global y_bank, bank_idx 
+y_bank = []
+bank_idx = []
+
+def set_signal_bank(y, kernel_size, sr=44100, n_fft=2048):
+    global y_bank, bank_idx
+    y_bank, bank_idx = make_signal_bank(y, kernel_size, sr=sr, n_fft=n_fft)
+
+def get_bank_idx(freq_range):
+    return find_nearest(bank_idx, freq_range[0])
+
 
 def stft_zoom(y, freq_range, time_range, sr=44100, original_window_size=2048, k=2):
     # Returns an STFT representation of the interval freq_range x time_range of signal y with
     # its frequency resolution determined by the factor k
+    global y_bank, bank_idx 
 
     inverted = False # suppose that the spectrum is not inverted to begin with (it could be if undersampling is performed)
-    y_mod, new_sr, f_min, inverted = filter_and_mod(slice_signal(y, time_range, sr), freq_range, sr)
+    
+    if freq_range[0] > 100 and freq_range[0] < 3000:
+        print(freq_range, "used signal bank")
+        y_mod, new_sr, f_min, inverted = y_bank[get_bank_idx(freq_range)]
+        y_mod = slice_signal(y_mod, time_range, sr)
+    else:
+        print(freq_range, "did not use signal bank")
+        y_mod, new_sr, f_min, inverted = filter_and_mod(slice_signal(y, time_range, sr), freq_range, sr)
     y_sub, new_sr = subsample_signal(y_mod, new_sr, sr)
 
     original_resolution = sr / original_window_size
     stft_zoom, new_window_size, new_hop_size = analyze_slice(y_sub, new_sr, original_resolution, k=k)
-    
+        
     if type(f_min) is list: # undersampling inverted the spectrum between f_min[0] and f_min[1]
         ws = f_min[0]
         new_freq_range = f_min[1]        
@@ -169,6 +217,67 @@ def stft_zoom(y, freq_range, time_range, sr=44100, original_window_size=2048, k=
 
     # stft matrix, x axis, y axis, new sampling rate, window size and hop size used in this new STFT
     return stft_zoom[y_start:y_end,:], x_axis, y_axis[y_start:y_end], new_sr, new_window_size, new_hop_size
+
+def stft_zoom_nobank(y, freq_range, time_range, sr=44100, original_window_size=2048, k=2):
+    # stft_zoom() that does not use a pre-computed signal bank, for the purpose of comparing performances
+
+    # Returns an STFT representation of the interval freq_range x time_range of signal y with
+    # its frequency resolution determined by the factor k
+    
+    inverted = False # suppose that the spectrum is not inverted to begin with (it could be if undersampling is performed)
+    y_mod, new_sr, f_min, inverted = filter_and_mod(slice_signal(y, time_range, sr), freq_range, sr)
+    y_sub, new_sr = subsample_signal(y_mod, new_sr, sr)
+
+    original_resolution = sr / original_window_size
+    stft_zoom, new_window_size, new_hop_size = analyze_slice(y_sub, new_sr, original_resolution, k=k)
+        
+    if type(f_min) is list: # undersampling inverted the spectrum between f_min[0] and f_min[1]
+        ws = f_min[0]
+        new_freq_range = f_min[1]        
+        f_min = ws[0] - new_freq_range[0]
+        x_axis, y_axis = get_axes_values(new_sr, f_min, time_range, stft_zoom.shape)
+        stft_zoom = unmirror(stft_zoom, y_axis, ws)        
+    else:
+        x_axis, y_axis = get_axes_values(new_sr, f_min, time_range, stft_zoom.shape)
+
+    # Slice the spectrogram in order to represent only the specified frequency range
+    # ("guard bands" are used in the bandpass and lowpass filters in order to not distort the frequency
+    # band specified)
+    y_start = find_nearest(y_axis, freq_range[0])
+    y_end   = find_nearest(y_axis, freq_range[1])
+
+    # stft matrix, x axis, y axis, new sampling rate, window size and hop size used in this new STFT
+    return stft_zoom[y_start:y_end,:], x_axis, y_axis[y_start:y_end], new_sr, new_window_size, new_hop_size
+
+
+# def stft_zoom(y, freq_range, time_range, sr=44100, original_window_size=2048, k=2):
+#     # Returns an STFT representation of the interval freq_range x time_range of signal y with
+#     # its frequency resolution determined by the factor k
+
+#     inverted = False # suppose that the spectrum is not inverted to begin with (it could be if undersampling is performed)
+#     y_mod, new_sr, f_min, inverted = filter_and_mod(slice_signal(y, time_range, sr), freq_range, sr)
+#     y_sub, new_sr = subsample_signal(y_mod, new_sr, sr)
+
+#     original_resolution = sr / original_window_size
+#     stft_zoom, new_window_size, new_hop_size = analyze_slice(y_sub, new_sr, original_resolution, k=k)
+    
+#     if type(f_min) is list: # undersampling inverted the spectrum between f_min[0] and f_min[1]
+#         ws = f_min[0]
+#         new_freq_range = f_min[1]        
+#         f_min = ws[0] - new_freq_range[0]
+#         x_axis, y_axis = get_axes_values(new_sr, f_min, time_range, stft_zoom.shape)
+#         stft_zoom = unmirror(stft_zoom, y_axis, ws)        
+#     else:
+#         x_axis, y_axis = get_axes_values(new_sr, f_min, time_range, stft_zoom.shape)
+
+#     # Slice the spectrogram in order to represent only the specified frequency range
+#     # ("guard bands" are used in the bandpass and lowpass filters in order to not distort the frequency
+#     # band specified)
+#     y_start = find_nearest(y_axis, freq_range[0])
+#     y_end   = find_nearest(y_axis, freq_range[1])
+
+#     # stft matrix, x axis, y axis, new sampling rate, window size and hop size used in this new STFT
+#     return stft_zoom[y_start:y_end,:], x_axis, y_axis[y_start:y_end], new_sr, new_window_size, new_hop_size
 
 # # Returns 0 if it is not possible to perform "simple" subsampling
 # # Returns the new sampling rate otherwise

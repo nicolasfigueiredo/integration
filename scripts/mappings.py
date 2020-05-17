@@ -1,16 +1,25 @@
 import numpy as np
 import scipy.stats
+from librosa import amplitude_to_db
+from fast_histogram import histogram1d
 
 # This script contains functions that perform feature extraction from a spectrogram.
 # The main function is calc_map_aug2(), that subdivides a spectrogram into subregions of
 # dimensions given by cents x ms, and then applies a function to each subregion (mean, std deviation, entropy)
 
+def histogram(array, bins=10):
+    range = [np.min(array), np.max(array)+0.0001]
+    bin_range = (range[1] - range[0]) / 10
+    hist = histogram1d(array, 10, range)
+    return hist / (np.sum(hist) * bin_range)
+
 def renyi_entropy(tfp_region, alpha=3):  # without normalizaton factor
-    hist = np.histogram(tfp_region, bins=10, density=True)[0]
+    # hist = np.histogram(tfp_region, bins=10, density=True)[0]
+    hist = histogram(tfp_region, bins=10)
     return (1/(1-alpha)) * np.log2(np.sum(hist ** alpha))
     
 def shannon_entropy(tfp_region):
-    hist = np.histogram(tfp_region, bins=10, density=True)[0]
+    hist = histogram(tfp_region, bins=10)
     return scipy.stats.entropy(hist)
 
 def find_freq_list(fft_freqs, delta_f_c):
@@ -81,6 +90,46 @@ def calc_map_aug2(spectrogram, kernel_dimensions, n_fft=2048, hop_size=512, sr=4
         j_map += 1
     
     return mapping
+
+def extract_features(spec_amp, kernel_dimensions, n_fft=2048, hop_size=512, sr=44100, alpha=3, fft_freqs=None):
+    # A custom version of calc_map_aug2() that extracts renyi and shannon entropies at the same time
+
+    # calc_map_aug2() divides a spectrogram into subregions of dimensions given by kernel_dimensions, where:
+    #   kernel_dimensions[0] is given in ms;
+    #   kernel_dimensions[1] is given in cents, and therefore is not linear in frequency.
+    # After this division, a mapping is applied for each subregion according to the 'type' keyword, and the
+    # resulting matrix is returned.
+
+    if fft_freqs is None:
+        idx_list = find_freq_list(fft_frequencies(sr=sr, n_fft=n_fft), kernel_dimensions[1]) # essa linha: 
+    else:
+        idx_list = find_freq_list(fft_freqs, kernel_dimensions[1]) # para calcular mapa de regiões refinadas, já passamos o eixo de frequências     
+
+    delta_t_ms = kernel_dimensions[0]   # dimensão em ms
+
+    # ms_per_frame = (n_fft+hop_size) * 1000 / (sr*2)   # discussão
+    ms_per_frame = hop_size * 1000 / sr
+    delta_t = int(np.round(delta_t_ms / ms_per_frame))
+
+    mapping_shannon = np.zeros([len(idx_list)-1, spec_amp.shape[1]//delta_t])
+    mapping_renyi   = np.zeros([len(idx_list)-1, spec_amp.shape[1]//delta_t])
+    
+    j = 0
+    j_map = 0
+
+    spec_db = amplitude_to_db(spec_amp, ref=np.min)
+
+    while j < spec_amp.shape[1] - delta_t:
+        for i_map in range(len(idx_list)-1):
+            subregion_amp = spec_amp[idx_list[i_map]:idx_list[i_map+1], j:j+delta_t]
+            subregion_db = spec_db[idx_list[i_map]:idx_list[i_map+1], j:j+delta_t]
+
+            mapping_shannon[i_map, j_map] = shannon_entropy(subregion_db)
+            mapping_renyi[i_map, j_map] = renyi_entropy(subregion_amp, alpha=alpha)
+        j += delta_t
+        j_map += 1
+    
+    return mapping_shannon, mapping_renyi
 
 # helper function taken from librosa
 def fft_frequencies(sr=44100, n_fft=2048):

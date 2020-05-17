@@ -14,13 +14,9 @@ def detect_musical_regions(model, spectrogram, mode='threshold', pct_or_threshol
     # and a threshold of probability or percentile.
     # The returned list are the flattened indices that represent interesting subregions in the feature matrix, that
     # should be converted later
-
-    spec_amp = np.abs(spectrogram)
-    spec_db = librosa.amplitude_to_db(spec_amp, ref=np.min)
     
     # Compute features
-    renyi = mappings.calc_map_aug2(spec_amp, kernel, type='renyi', n_fft=n_fft, hop_size=hop_size, sr=sr, fft_freqs=y_axis)
-    shannon = mappings.calc_map_aug2(spec_db, kernel, type='shannon', n_fft=n_fft, hop_size=hop_size, sr=sr, fft_freqs=y_axis)
+    shannon, renyi = mappings.extract_features(spectrogram, kernel, n_fft=n_fft, hop_size=hop_size, sr=sr, fft_freqs=y_axis)
     X = np.array([shannon.flatten(), renyi.flatten()]).T
     
     # Predict probability
