@@ -23,7 +23,7 @@ def shannon_entropy(tfp_region):
     return scipy.stats.entropy(hist)
 
 def find_freq_list(fft_freqs, delta_f_c):
-    # Returns the frequency list that deetermines the musical interval in cents
+    # Returns the frequency list that determines the musical interval in cents
     # Ex: between fft_freqs[idx_list[i]] and fft_freqs[idx_list[i+1]] there is an interval of delta_f_c cents
     idx_list = [0]
     freq_step = fft_freqs[1] - fft_freqs[0]
