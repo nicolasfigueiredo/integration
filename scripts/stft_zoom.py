@@ -53,22 +53,22 @@ def filter_and_mod(y, freq_range, sr):
     
     if not new_sr: # if undersampling is not possible, perform ringmod + lpf
         new_sr = (ws[1] - ws[0] + 100/(sr/2)) * sr
-        print("ring mod + lpf")
+        # print("ring mod + lpf")
         return filter_lowpass(ring_mod(y_filt, ws[0]*(sr/2), sr), new_sr/2 - 100, sr), new_sr, ws[0]*(sr/2), inverted         
         
-    print("undersampling")
+    # print("undersampling")
     new_freq_range = treat_undersampling(new_sr[0], new_sr[1], ws*(sr/2)) # where will the frequency band of interest be shifted to?
     if new_sr[1] == 0: # undersampling frequency found using even n, mirroring of spectrum is needed
-        print(new_sr, new_freq_range)
+        # print(new_sr, new_freq_range)
         inverted = True
         return y_filt, new_sr[0], [ws*(sr/2), new_freq_range], inverted
 
-    print(new_sr, new_freq_range)
+    # print(new_sr, new_freq_range)
     return y_filt, new_sr[0], ws[0]*(sr/2) - new_freq_range[0], inverted
 
 def filter_bandpass(y, wp, ws, sr):
     N, wn = scipy.signal.buttord(wp, ws, 3, 20)
-    print("N = ", N)
+    # print("N = ", N)
     sos = scipy.signal.butter(N, wn, 'band', output='sos')
     return scipy.signal.sosfilt(sos, y)
 
@@ -105,7 +105,7 @@ def treat_undersampling(undersample_freq, n_parity, freq_range):
 #   Returns the frequency band where the original frequency band of interest will be located in the
 #   undersampled signal
 
-    print(freq_range)
+    # print(freq_range)
     if n_parity == 0:
         new_fl = np.ceil(freq_range[1]/undersample_freq) * undersample_freq - freq_range[1]
         new_fh = new_fl + freq_range[1] - freq_range[0]
@@ -189,11 +189,11 @@ def stft_zoom(y, freq_range, time_range, sr=44100, original_window_size=2048, k=
     inverted = False # suppose that the spectrum is not inverted to begin with (it could be if undersampling is performed)
     
     if freq_range[0] > 100 and freq_range[0] < 3000:
-        print(freq_range, "used signal bank")
+        # print(freq_range, "used signal bank")
         y_mod, new_sr, f_min, inverted = y_bank[get_bank_idx(freq_range)]
         y_mod = slice_signal(y_mod, time_range, sr)
     else:
-        print(freq_range, "did not use signal bank")
+        # print(freq_range, "did not use signal bank")
         y_mod, new_sr, f_min, inverted = filter_and_mod(slice_signal(y, time_range, sr), freq_range, sr)
     y_sub, new_sr = subsample_signal(y_mod, new_sr, sr)
 

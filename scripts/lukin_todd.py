@@ -3,34 +3,45 @@ import librosa
 import numpy as np
 import PIL
 
+def lukin_todd_main_no_shift(y, n, kernel):
+    specs = get_n_spectrograms(y, n=n)
+    entropies = get_entropies(specs, kernel)
+    return lukin_todd(specs, kernel, entropies)
+
+def lukin_todd_main_shift(y, n, kernel):
+    specs = get_n_spectrograms_shifted(y, n=n)
+    entropies = get_entropies(specs, kernel)
+    return lukin_todd(specs, kernel, entropies)
+
 def lukin_todd(specs, kernel, entropies):
-    multires_spec = np.zeros(specs[2][0].shape)
+    multires_spec = np.zeros(specs[-1][0].shape)
     multires_spec = PIL.Image.fromarray(multires_spec)
 
-    res_map = np.zeros(specs[2][0].shape)
-    res_map = PIL.Image.fromarray(res_map)
+    # res_map = np.zeros(specs[-1][0].shape)
+    # res_map = PIL.Image.fromarray(res_map)
 
     shape = [256 // kernel[0], 3446//kernel[1]]
 
     for i in range(0, shape[0]):
         for j in range(0, shape[1]):
-            # entropies = get_entropies_2(specs, kernel, [i,j])
-            # chosen_res = np.array(entropies).argmin()
-            chosen_res = np.array([entropies[0][i,j], entropies[1][i,j], entropies[2][i,j]]).argmin()
+            entropies_local = []
+            for en in entropies:
+                entropies_local.append(en[i,j])
+            chosen_res = np.array(entropies_local).argmin()
 
             [y_start_cs, y_stop_cs], [x_start_cs, x_stop_cs] = get_range([i,j], kernel, specs[chosen_res][1], specs[chosen_res][2])
             chosen_res_subregion = specs[chosen_res][0][y_start_cs:y_stop_cs, x_start_cs:x_stop_cs]
 
-            [y_start_mr, y_stop_mr], [x_start_mr, x_stop_mr] = get_range([i,j], kernel, 4096, 1024)
+            [y_start_mr, y_stop_mr], [x_start_mr, x_stop_mr] = get_range([i,j], kernel, specs[-1][1], specs[-1][2])
             chosen_res_subregion = PIL.Image.fromarray(chosen_res_subregion).resize((x_stop_mr - x_start_mr,y_stop_mr - y_start_mr))
 
-            res_map_subregion = PIL.Image.fromarray(np.ones([y_stop_mr - y_start_mr, x_stop_mr - x_start_mr]) * (chosen_res+1))
+            # res_map_subregion = PIL.Image.fromarray(np.ones([y_stop_mr - y_start_mr, x_stop_mr - x_start_mr]) * (chosen_res+1))
             
             box = (x_start_mr, y_start_mr, x_stop_mr, y_stop_mr)
             multires_spec.paste(chosen_res_subregion, box)
-            res_map.paste(res_map_subregion, box)
+            # res_map.paste(res_map_subregion, box)
 
-    return np.asarray(multires_spec), np.asarray(res_map) 
+    return np.asarray(multires_spec)#, np.asarray(res_map) 
 
 def half_bin_shift(y, window_size, sr):
     freq_shift = sr / (window_size * 2)
@@ -46,7 +57,7 @@ def calc_smearing(bins):
 #     return mean / (np.sqrt(np.sum(bins)) * normalize + 0.00001)
     return mean / (normalize + 0.00001)
 
-def calc_entropy_shifted(spectrogram, kernel_dimensions, n_fft=2048, hop_size=512, sr=44100):
+def calc_entropy(spectrogram, kernel_dimensions, n_fft=2048, hop_size=512, sr=44100):
     # kernel given in [freq. bins of 512 hz window res, time frames of 128 hop size res]
     
     delta_t = int(128 / hop_size * kernel_dimensions[1]) 
@@ -60,8 +71,8 @@ def calc_entropy_shifted(spectrogram, kernel_dimensions, n_fft=2048, hop_size=51
     i = 0
     i_map = 0
 
-    while j < spectrogram.shape[1] - delta_t:
-        while i < spectrogram.shape[0] - delta_f:
+    while j_map < mapping.shape[1]:
+        while i_map < mapping.shape[0]:
             subregion = spectrogram[i:i+delta_f, j:j+delta_t]
 #             mapping[i_map, j_map] = mappings.shannon_entropy(subregion)
             mapping[i_map, j_map] = calc_smearing(subregion)
@@ -78,7 +89,7 @@ def calc_entropy_shifted(spectrogram, kernel_dimensions, n_fft=2048, hop_size=51
 
 # Get n spectrograms with a half-bin frequency shift
 def get_n_spectrograms_shifted(y, n=3):
-    n_ffts = [512, 1024, 4096, 8192]
+    n_ffts = [512, 1024, 2048, 4096, 8192, 16384, 32768]
     spec_list = []
     for i in range(n):
         n_fft = n_ffts[i]
@@ -91,7 +102,7 @@ def get_n_spectrograms_shifted(y, n=3):
     return spec_list
 
 def get_n_spectrograms(y, n=3):
-    n_ffts = [512, 1024, 4096, 8192]
+    n_ffts = [512, 1024, 2048, 4096, 8192, 16384, 32768]
     spec_list = []
     for i in range(n):
         n_fft = n_ffts[i]
@@ -105,7 +116,7 @@ def get_n_spectrograms(y, n=3):
 def get_entropies(specs, kernel):
     entropies = []
     for spec in specs:
-        entropies.append(calc_entropy_shifted(spec[0], kernel, n_fft=spec[1], hop_size=spec[2]))
+        entropies.append(calc_entropy(spec[0], kernel, n_fft=spec[1], hop_size=spec[2]))
     return entropies
 
 def get_entropies_2(specs, kernel, idx):

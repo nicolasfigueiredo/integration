@@ -20,6 +20,9 @@ class MultiResSpectrogram(object):
         x_end   = find_nearest(base_spec.x_axis, zoom_spec.x_axis[-1])
         y_start = find_nearest(base_spec.y_axis, zoom_spec.y_axis[0])
         y_end   = find_nearest(base_spec.y_axis, zoom_spec.y_axis[-1])
+
+        if y_start == y_end:
+            y_end += 1
         
         norm_ref = np.max(base_spec.spec[y_start:y_end, x_start:x_end])
         zoom_spec.spec = zoom_spec.spec * (norm_ref/np.max(zoom_spec.spec))
@@ -50,7 +53,7 @@ class MultiResSpectrogram(object):
         x_end   = find_nearest(self.base_spec.x_axis, zoom_spec.x_axis[-1])
         y_start = find_nearest(y_axis, zoom_spec.y_axis[0])-1 # "discontinuidade" na fronteira do kernel
         y_end   = find_nearest(y_axis, zoom_spec.y_axis[-1])
-        
+
         zoom_img = PIL.Image.fromarray(MultiResSpectrogram.convert_to_visualization(zoom_spec.spec)).resize((x_end - x_start,y_end - y_start))
         box = (x_start, y_start, x_end, y_end)
         spec_img.paste(zoom_img, box)
