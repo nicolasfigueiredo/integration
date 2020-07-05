@@ -1,3 +1,7 @@
+.DS_STORE
+notebooks/.DS_STORE
+*.DS_STORE
+data/*
 data/features/*
 notebooks/tutorial_eda.ipynb
 notebooks/.ipynb_checkpoints/tutorial_eda-checkpoint.ipynb

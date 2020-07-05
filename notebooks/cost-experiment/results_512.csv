@@ -1,0 +1,6 @@
+STFT;2.97 ms ± 523 µs per loop (mean ± std. dev. of 3 runs, 3 loops each)
+CQT;50.5 ms ± 1.99 ms per loop (mean ± std. dev. of 3 runs, 3 loops each)
+LT;5.93 s ± 0 ns per loop (mean ± std. dev. of 1 run, 1 loop each)
+SWGM;8.1 ms ± 311 µs per loop (mean ± std. dev. of 3 runs, 3 loops each)
+SLS;10.2 s ± 0 ns per loop (mean ± std. dev. of 1 run, 1 loop each)
+OURS;77.5 ms ± 1.69 ms per loop (mean ± std. dev. of 3 runs, 3 loops each)

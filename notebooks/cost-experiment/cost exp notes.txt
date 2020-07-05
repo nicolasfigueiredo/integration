@@ -1,0 +1,16 @@
+cost exp notes
+
+normalizacao: usar simples, discutir no texto
+half-bin shift: nao usar, colocar no texto (na vdd usar método do maumau)
+resolucoes: cents na oitava 100Hz-200Hz
+variar kernel como parâmetro do experimento: isso quer dizer treinar diversos modelos....
+ver qtos arquivos dá p rodar em tempo razoável (1 dia)
+
+coisas a testar: tempo de execucao e memória gasta.
+
+prox passos:
+
+- deixar script pronto. testar com um arquivo. definir tamanho kernel dos outros métodos
+- treinar modelos (3 tá bom. 200x200, 500x500, 1000x1000)
+- pensar em qtos arquivos rodar, qtas vezes etc.
+- RODAR EXP.
