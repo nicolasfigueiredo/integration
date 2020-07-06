@@ -3,8 +3,8 @@ cost exp notes
 normalizacao: usar simples, discutir no texto
 half-bin shift: nao usar, colocar no texto (na vdd usar método do maumau)
 resolucoes: cents na oitava 100Hz-200Hz
-variar kernel como parâmetro do experimento: isso quer dizer treinar diversos modelos....
-ver qtos arquivos dá p rodar em tempo razoável (1 dia)
+variar kernel como parâmetro do experimento
+ver qtos arquivos dá p rodar em tempo razoável (12 hrs)
 
 coisas a testar: tempo de execucao e memória gasta.
 
@@ -14,3 +14,11 @@ prox passos:
 - treinar modelos (3 tá bom. 200x200, 500x500, 1000x1000)
 - pensar em qtos arquivos rodar, qtas vezes etc.
 - RODAR EXP.
+
+pro marcelo:
+
+resolucao em cents???
+só tempo de execução e memória...
+boxplots
+variar duração do arquivo?? talvez pra um exemplo..
+7 min per 30sec file:
