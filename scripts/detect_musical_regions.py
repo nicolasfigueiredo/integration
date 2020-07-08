@@ -45,7 +45,7 @@ def index_to_range(idx, x_axis, y_axis, kernel, sr=44100, n_fft=2048, hop_size=5
     idx_y = idx[0]
     freq_idx_list = mappings.find_freq_list(y_axis, kernel[1]) # find frequencies that correspond to the y_axis of the feature map
     ms_per_frame = hop_size * 1000 / sr
-    delta_x_idx = int(np.round(kernel[0] / ms_per_frame)) # each "block" of the feature map lies between x_axis[i] and x_axis[i+delta_x_idx] 
+    delta_x_idx = int(np.round(kernel[1] / ms_per_frame)) # each "block" of the feature map lies between x_axis[i] and x_axis[i+delta_x_idx] 
     freq_range = [y_axis[freq_idx_list[idx_y]], y_axis[freq_idx_list[idx_y+1]]]
     time_range = [x_axis[idx_x*delta_x_idx], x_axis[(idx_x+1)*delta_x_idx]]
     return freq_range, time_range

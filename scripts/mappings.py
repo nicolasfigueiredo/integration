@@ -2,6 +2,7 @@ import numpy as np
 import scipy.stats
 from librosa import amplitude_to_db
 from fast_histogram import histogram1d
+from util import find_nearest
 
 # This script contains functions that perform feature extraction from a spectrogram.
 # The main function is calc_map_aug2(), that subdivides a spectrogram into subregions of
@@ -23,7 +24,7 @@ def shannon_entropy(tfp_region):
     return scipy.stats.entropy(hist)
 
 def find_freq_list(fft_freqs, delta_f_c):
-    # Returns the frequency list that determines the musical interval in cents
+    # Returns the frequency list that deetermines the musical interval in cents
     # Ex: between fft_freqs[idx_list[i]] and fft_freqs[idx_list[i+1]] there is an interval of delta_f_c cents
     idx_list = [0]
     freq_step = fft_freqs[1] - fft_freqs[0]
@@ -123,7 +124,6 @@ def extract_features(spec_amp, kernel_dimensions, n_fft=2048, hop_size=512, sr=4
         for i_map in range(len(idx_list)-1):
             subregion_amp = spec_amp[idx_list[i_map]:idx_list[i_map+1], j:j+delta_t]
             subregion_db = spec_db[idx_list[i_map]:idx_list[i_map+1], j:j+delta_t]
-
             mapping_shannon[i_map, j_map] = shannon_entropy(subregion_db)
             mapping_renyi[i_map, j_map] = renyi_entropy(subregion_amp, alpha=alpha)
         j += delta_t

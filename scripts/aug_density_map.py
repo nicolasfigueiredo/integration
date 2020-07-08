@@ -8,6 +8,51 @@ from skimage.transform import resize
 # 2) A binary piano roll + harmonics matrix, with no velocity information;
 # 3) A piano roll + harmonics + energy decay over time and frequency matrix (defined by us as an "augmented" piano roll).
 
+def midi_to_piano_roll_new(midi_file, timestamp, decay=False, decay_rate=28):
+    # decay determines if a linear velocity decay rate will be applied to all notes (TO DO)
+    # decay_rate is given in velocity per second
+
+
+    # From a midi file, build a 2D array representing the piano roll
+    decay_per_tick = decay_rate / mido.second2tick(1, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat)
+    ticks_in_track = np.ceil(mido.second2tick(midi_file.length, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
+    piano_roll = np.zeros([127, int(ticks_in_track)])   # piano roll with x axis labeled by ticks and y axis labeled by midi note number
+
+    time = 0
+    pedal_flag = False           # True if sustain pedal is pressed, 0 otherwise
+    noteon_vel = np.zeros(127)   # velocity of pressed keys
+    noteon_time = np.zeros(127, dtype='int') # time key was pressed
+    noteoff_time = np.zeros(127, dtype='int') + 1# time key was pressed
+    keyrelease_flags = []
+
+    for msg in midi_file.tracks[1]:
+        time += msg.time
+        if msg.type == 'note_on':
+            if msg.velocity > 0:
+                noteon_vel[msg.note] = msg.velocity
+                if noteoff_time[msg.note] > noteon_time[msg.note]:
+                    noteon_time[msg.note] = time
+            else: # note-off (note-offs are given as note-on events with velocity==0)
+                if pedal_flag: # key was released, but sustain pedal keeps it sounding
+                    keyrelease_flags.append(msg.note) # notes contained here will cease when sustain pedal is released
+                else:
+                    piano_roll[msg.note, noteon_time[msg.note]:time+1] = noteon_vel[msg.note]
+                    noteoff_time[msg.note] = time # ISSO SINALIZA QUE PODEMOS ESCREVER UM NOVO TEMPO PRO NOTE-ON
+        elif msg.type == 'control_change' and msg.control == 64:
+            if not pedal_flag and msg.value>0: # pedal sends several messages during one pressing motion
+                pedal_flag = True
+            elif pedal_flag and msg.value == 0:
+                pedal_flag = False
+                for note in keyrelease_flags: # these notes stopped playing
+                    piano_roll[note, noteon_time[note]:time+1] = noteon_vel[note]
+                    noteoff_time[note] = time # ISSO SINALIZA QUE PODEMOS ESCREVER UM NOVO TEMPO PRO NOTE-ON
+                    keyrelease_flags = []
+                
+    start_time = int(mido.second2tick(timestamp, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
+    stop_time  = int(mido.second2tick(timestamp+30, tempo=500000, ticks_per_beat=midi_file.ticks_per_beat))
+    return piano_roll[:127,start_time:stop_time]
+    # return piano_roll
+    
 def midi_to_piano_roll_augmented(midi_file, timestamp):
     # From a midi file, build an "augmented" piano roll
 

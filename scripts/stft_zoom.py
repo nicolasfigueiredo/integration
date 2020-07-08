@@ -148,9 +148,7 @@ def get_axes_values(sr, f_min, time_range, spec_shape):
 def make_signal_bank(y, kernel_size, sr=44100, n_fft=2048):
     # Make bank of filtered signals according to kernel size
     # Signals from 400Hz to 4000kHz
-
     y_bank = []
-
     fft_freqs = mappings.fft_frequencies(sr=sr, n_fft=n_fft)
     idx_list = mappings.find_freq_list(fft_freqs, kernel_size[1]) # essa linha:
     freq_list = fft_freqs[idx_list]

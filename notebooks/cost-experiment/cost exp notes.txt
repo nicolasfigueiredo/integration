@@ -17,8 +17,38 @@ prox passos:
 
 pro marcelo:
 
-resolucao em cents???
+resolucao em cents?
+o negocio de rodar 3 vezes e pegar a melhor, o que fazer com o std dev
 só tempo de execução e memória...
 boxplots
-variar duração do arquivo?? talvez pra um exemplo..
 7 min per 30sec file:
+rodar mesmo experimento usando threshold em pct usando pct alta (70%) pra estressar algoritmo
+
+===================
+
+-discussao acoplada: custo comp x precisao recall da metrica de relevancia
+-FAZER ANÁLISE DE CUSTO FECHADA
+-numero de chamadas de funcao
+-numpy: parâmetros num prod matriz vetor, num prod internos
+-fórmula fechada: média e variância de soma de médias
+-tamanho do arquivo: dividir tempo de exec. por numero de frames
+-plotar log base 10
+-1 nível de refinamento
+-esclarecer fator melhoria por profundidade
+-definir stft grosseiro pelo usuario
+-res inicial, num passos, res final,
+-qual percentual de retangulos intercepta eventos musicais??
+
+===================
+
+To dos:
+
+- como fazer somas de médias: https://en.wikipedia.org/wiki/Sum_of_normally_distributed_random_variables#:~:text=In%20probability%20theory%2C%20calculation%20of,variables%20involved%20and%20their%20relationships
+- botar inicialização de estruturas como setupo que não entra no custo comp.
+- usar nossa soluçao com percentual de refinamento extraído do ground truth
+- STFT grosseiro inicial = 512
+- testar custo de algoritmo com 2 níveis de refinamento
+- Ver se dá pra fazer essa análise de número de chamadas de função, contar algo como função do numpy np.dot ou algo assim.
+- Fazer análise em forma fechada de custo computacional da nossa solução para uma porcentagem fixa de refinamento
+- Plotar gráfico com os dois grupos discrepantes em log no eixo y
+- Deixar claro no texto que audios sao todos de 30 segundos
