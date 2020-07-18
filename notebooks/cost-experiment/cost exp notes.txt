@@ -43,12 +43,36 @@ rodar mesmo experimento usando threshold em pct usando pct alta (70%) pra estres
 
 To dos:
 
-- como fazer somas de médias: https://en.wikipedia.org/wiki/Sum_of_normally_distributed_random_variables#:~:text=In%20probability%20theory%2C%20calculation%20of,variables%20involved%20and%20their%20relationships
-- botar inicialização de estruturas como setupo que não entra no custo comp.
-- usar nossa soluçao com percentual de refinamento extraído do ground truth
-- STFT grosseiro inicial = 512
-- testar custo de algoritmo com 2 níveis de refinamento
+- STFT grosseiro inicial = 512 DONE
+- usar nossa soluçao com percentual de refinamento extraído do ground truth DONE
+- ver velocidade com esse novo stft grosseiro... comparar com stft 2048 DONE
+- botar inicialização de estruturas como setup que não entra no custo comp. DONE
+- testar custo de algoritmo com 2 níveis de refinamento DONE
+
 - Ver se dá pra fazer essa análise de número de chamadas de função, contar algo como função do numpy np.dot ou algo assim.
 - Fazer análise em forma fechada de custo computacional da nossa solução para uma porcentagem fixa de refinamento
+
 - Plotar gráfico com os dois grupos discrepantes em log no eixo y
 - Deixar claro no texto que audios sao todos de 30 segundos
+- como fazer somas de médias: https://en.wikipedia.org/wiki/Sum_of_normally_distributed_random_variables#:~:text=In%20probability%20theory%2C%20calculation%20of,variables%20involved%20and%20their%20relationships
+
+====================
+
+cost profiling:
+
+coisas que dá pra medir: número de ffts, array functions(convolve, prod, ), número total de chamadas de funcao
+
+fazer análise forma fechada.
+msg guili, joao
+deixar exp pronto pra ser rodado
+email feulo.. melhor amanhã depois do teste da internet em camposh
+
+voxau alexa
+
+
+
+====================
+
+coisas pra depois
+
+mudar find_freq_list

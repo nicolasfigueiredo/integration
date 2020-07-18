@@ -46,8 +46,12 @@ def index_to_range(idx, x_axis, y_axis, kernel, sr=44100, n_fft=2048, hop_size=5
     freq_idx_list = mappings.find_freq_list(y_axis, kernel[1]) # find frequencies that correspond to the y_axis of the feature map
     ms_per_frame = hop_size * 1000 / sr
     delta_x_idx = int(np.round(kernel[1] / ms_per_frame)) # each "block" of the feature map lies between x_axis[i] and x_axis[i+delta_x_idx] 
+    if delta_x_idx == 1:
+        delta_x_idx += 1
     freq_range = [y_axis[freq_idx_list[idx_y]], y_axis[freq_idx_list[idx_y+1]]]
-    time_range = [x_axis[idx_x*delta_x_idx], x_axis[(idx_x+1)*delta_x_idx]]
+    time_range = [x_axis[idx_x*delta_x_idx], x_axis[(idx_x+1)*delta_x_idx - 1]]
+    # if kernel == [100,100]:
+    #     print(ms_per_frame, delta_x_idx, time_range)
     return freq_range, time_range
 
 # Should be moved to the MultiResSpec() class in the future

@@ -44,6 +44,9 @@ def find_freq_list(fft_freqs, delta_f_c):
         f1 = fft_freqs[idx_f1]
         f2 = f1 * 2 ** (delta_f_c/1200)  
         idx_f2 = idx_f1 + int(np.ceil((f2 - f1)/freq_step))
+
+    if idx_list[-1] != len(fft_freqs) - 1:
+        idx_list.append(len(fft_freqs) - 1)
         
     return idx_list
 
@@ -104,7 +107,8 @@ def extract_features(spec_amp, kernel_dimensions, n_fft=2048, hop_size=512, sr=4
     if fft_freqs is None:
         idx_list = find_freq_list(fft_frequencies(sr=sr, n_fft=n_fft), kernel_dimensions[1]) # essa linha: 
     else:
-        idx_list = find_freq_list(fft_freqs, kernel_dimensions[1]) # para calcular mapa de regiões refinadas, já passamos o eixo de frequências     
+        idx_list = find_freq_list(fft_freqs, kernel_dimensions[1]) # para calcular mapa de regiões refinadas, já passamos o eixo de frequências
+
 
     delta_t_ms = kernel_dimensions[0]   # dimensão em ms
 
