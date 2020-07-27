@@ -27,6 +27,8 @@ def find_freq_list(fft_freqs, delta_f_c):
     # Returns the frequency list that deetermines the musical interval in cents
     # Ex: between fft_freqs[idx_list[i]] and fft_freqs[idx_list[i+1]] there is an interval of delta_f_c cents
     idx_list = [0]
+    if len(fft_freqs) == 1:
+        return idx_list
     freq_step = fft_freqs[1] - fft_freqs[0]
     
     if fft_freqs[0] < 0.0001:   # then fft_freqs[0] == 0, estamos analisando o espectrograma inteiro
@@ -109,12 +111,46 @@ def extract_features(spec_amp, kernel_dimensions, n_fft=2048, hop_size=512, sr=4
     else:
         idx_list = find_freq_list(fft_freqs, kernel_dimensions[1]) # para calcular mapa de regiões refinadas, já passamos o eixo de frequências
 
-
     delta_t_ms = kernel_dimensions[0]   # dimensão em ms
 
     # ms_per_frame = (n_fft+hop_size) * 1000 / (sr*2)   # discussão
     ms_per_frame = hop_size * 1000 / sr
     delta_t = int(np.round(delta_t_ms / ms_per_frame))
+
+    if len(idx_list) == 1:
+        mapping_shannon = np.zeros([1, spec_amp.shape[1]//delta_t])
+        mapping_renyi   = np.zeros([1, spec_amp.shape[1]//delta_t])
+        
+        j = 0
+        j_map = 0
+
+        spec_db = amplitude_to_db(spec_amp, ref=np.min)
+
+        while j < spec_amp.shape[1] - delta_t:
+            subregion_amp = spec_amp[0, j:j+delta_t]
+            subregion_db  = spec_db[0, j:j+delta_t]
+            mapping_shannon[0, j_map] = shannon_entropy(subregion_db)
+            mapping_renyi[0, j_map] = renyi_entropy(subregion_amp, alpha=alpha)
+            j += delta_t
+            j_map += 1
+        return mapping_shannon, mapping_renyi
+
+    if delta_t == 0:
+        mapping_shannon = np.zeros([len(idx_list)-1, 1])
+        mapping_renyi   = np.zeros([len(idx_list)-1, 1])
+        
+        j = 0
+        j_map = 0
+
+        spec_db = amplitude_to_db(spec_amp, ref=np.min)
+
+        for i_map in range(len(idx_list)-1):
+            subregion_amp = spec_amp[idx_list[i_map]:idx_list[i_map+1], 0]
+            subregion_db = spec_db[idx_list[i_map]:idx_list[i_map+1], 0]
+            mapping_shannon[i_map, j_map] = shannon_entropy(subregion_db)
+            mapping_renyi[i_map, j_map] = renyi_entropy(subregion_amp, alpha=alpha)
+        
+        return mapping_shannon, mapping_renyi
 
     mapping_shannon = np.zeros([len(idx_list)-1, spec_amp.shape[1]//delta_t])
     mapping_renyi   = np.zeros([len(idx_list)-1, spec_amp.shape[1]//delta_t])

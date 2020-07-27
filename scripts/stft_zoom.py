@@ -116,7 +116,7 @@ def treat_undersampling(undersample_freq, n_parity, freq_range):
 
 def ring_mod(y, freq, sr):
     t_final = len(y) / sr
-    t = np.linspace(0,t_final, int(sr*t_final))
+    t = np.linspace(0,t_final, len(y))
     x = np.cos(2*np.pi*freq*t)
     return x*y
 
@@ -129,8 +129,8 @@ def analyze_slice(y, new_sr, original_resolution, k=2):
     # determined by the factor k: new_resolution = k * original_resolution
     new_resolution = original_resolution / k
     window_size = int(new_sr / new_resolution)
-    hop_size = window_size // 4
-    return np.abs(librosa.stft(np.asfortranarray(y), n_fft=window_size, hop_length=hop_size, window='boxcar')), window_size, hop_size
+    hop_size = window_size
+    return np.abs(librosa.stft(np.asfortranarray(y), n_fft=window_size, hop_length=hop_size)), window_size, hop_size
 
 def unmirror(stft_zoom, y_axis, freq_range):
 #   Unmirror spectrum originally mirrored by the undersampling process
@@ -212,6 +212,8 @@ def stft_zoom(y, freq_range, time_range, sr=44100, original_window_size=2048, k=
     # band specified)
     y_start = find_nearest(y_axis, freq_range[0])
     y_end   = find_nearest(y_axis, freq_range[1])
+    if y_end == y_start:
+        y_end += 1
 
     # stft matrix, x axis, y axis, new sampling rate, window size and hop size used in this new STFT
     return stft_zoom[y_start:y_end,:], x_axis, y_axis[y_start:y_end], new_sr, new_window_size, new_hop_size

@@ -28,6 +28,9 @@ class MultiResSpectrogram(object):
 
         if y_start == y_end:
             y_end += 1
+
+        if x_start == x_end:
+            x_end += 1
         
         if normalize:
             norm_ref = np.max(base_spec.spec[y_start:y_end, x_start:x_end])

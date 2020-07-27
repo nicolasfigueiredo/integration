@@ -6,38 +6,21 @@ resolucoes: cents na oitava 100Hz-200Hz
 variar kernel como parâmetro do experimento
 ver qtos arquivos dá p rodar em tempo razoável (12 hrs)
 
-coisas a testar: tempo de execucao e memória gasta.
-
-prox passos:
-
-- deixar script pronto. testar com um arquivo. definir tamanho kernel dos outros métodos
-- treinar modelos (3 tá bom. 200x200, 500x500, 1000x1000)
-- pensar em qtos arquivos rodar, qtas vezes etc.
-- RODAR EXP.
-
-pro marcelo:
-
-resolucao em cents?
-o negocio de rodar 3 vezes e pegar a melhor, o que fazer com o std dev
-só tempo de execução e memória...
-boxplots
-7 min per 30sec file:
-rodar mesmo experimento usando threshold em pct usando pct alta (70%) pra estressar algoritmo
 
 ===================
 
--discussao acoplada: custo comp x precisao recall da metrica de relevancia
--FAZER ANÁLISE DE CUSTO FECHADA
--numero de chamadas de funcao
--numpy: parâmetros num prod matriz vetor, num prod internos
--fórmula fechada: média e variância de soma de médias
--tamanho do arquivo: dividir tempo de exec. por numero de frames
--plotar log base 10
--1 nível de refinamento
--esclarecer fator melhoria por profundidade
--definir stft grosseiro pelo usuario
--res inicial, num passos, res final,
--qual percentual de retangulos intercepta eventos musicais??
+- discussao acoplada: custo comp x precisao recall da metrica de relevancia
+- FAZER ANÁLISE DE CUSTO FECHADA
+- numero de chamadas de funcao
+- numpy: parâmetros num prod matriz vetor, num prod internos
+- fórmula fechada: média e variância de soma de médias
+- tamanho do arquivo: dividir tempo de exec. por numero de frames
+- plotar log base 10
+- 1 nível de refinamento
+- esclarecer fator melhoria por profundidade
+- definir stft grosseiro pelo usuario
+- res inicial, num passos, res final,
+- qual percentual de retangulos intercepta eventos musicais??
 
 ===================
 
@@ -69,10 +52,17 @@ email feulo.. melhor amanhã depois do teste da internet em camposh
 
 voxau alexa
 
-
-
 ====================
 
-coisas pra depois
+reuniao mqz:
 
-mudar find_freq_list
+explicar experimento em niveis, tamanho dos kerneis, pcts
+mostrar resultados
+confirmar de fazer aquela análise das chamadas de funcao para um só arquivo, memória tb
+analise teórica: não seria melhor mostrar dados da performance do código?
+
+=====================
+
+rodar cada arq 5 vezes
+
+rodou até 57.. agora testando sem o SWGM

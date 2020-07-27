@@ -1,6 +1,7 @@
 import numpy as np
 import math
 
+
 def find_nearest(array, value):
     # Find the element of 'array' closest to 'value'
     idx = np.searchsorted(array, value, side="left")
@@ -8,6 +9,7 @@ def find_nearest(array, value):
         return (idx-1)
     else:
         return idx
+
 
 # TIRADO DO LIBROSA
 def fft_frequencies(sr=22050, n_fft=2048):
