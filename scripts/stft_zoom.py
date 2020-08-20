@@ -210,8 +210,11 @@ def stft_zoom(y, freq_range, time_range, sr=44100, original_window_size=2048, k=
     # Slice the spectrogram in order to represent only the specified frequency range
     # ("guard bands" are used in the bandpass and lowpass filters in order to not distort the frequency
     # band specified)
-    y_start = find_nearest(y_axis, freq_range[0])
-    y_end   = find_nearest(y_axis, freq_range[1])
+    y_start = np.searchsorted(y_axis, freq_range[0], side="left")
+    y_end   = np.searchsorted(y_axis, freq_range[1], side="left") + 1
+    if y_end >= len(y_axis):
+        y_end = len(y_axis) - 1
+
     if y_end == y_start:
         y_end += 1
 
@@ -243,8 +246,15 @@ def stft_zoom_nobank(y, freq_range, time_range, sr=44100, original_window_size=2
     # Slice the spectrogram in order to represent only the specified frequency range
     # ("guard bands" are used in the bandpass and lowpass filters in order to not distort the frequency
     # band specified)
-    y_start = find_nearest(y_axis, freq_range[0])
-    y_end   = find_nearest(y_axis, freq_range[1])
+    y_start = np.searchsorted(y_axis, freq_range[0], side="left")
+    y_end   = np.searchsorted(y_axis, freq_range[1], side="left") + 1
+    if y_end >= len(y_axis):
+        y_end = len(y_axis) - 1
+
+    if y_end == y_start:
+        y_end += 1
+    # y_start = find_nearest(y_axis, freq_range[0])
+    # y_end   = find_nearest(y_axis, freq_range[1])
 
     # stft matrix, x axis, y axis, new sampling rate, window size and hop size used in this new STFT
     return stft_zoom[y_start:y_end,:], x_axis, y_axis[y_start:y_end], new_sr, new_window_size, new_hop_size

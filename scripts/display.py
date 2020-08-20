@@ -192,6 +192,7 @@ def specshow(data, x_data, y_data,
     # __decorate_axis(axes.yaxis, y_axis)
     axes.xaxis.set_label_text('Seconds (s)')
     axes.yaxis.set_label_text('Hertz (Hz)')
+    axes.set_yticks(y_data) # add loads of ticks
 
     axes.yaxis.set_major_formatter(ScalarFormatter())
 

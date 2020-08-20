@@ -41,28 +41,10 @@ To dos:
 
 ====================
 
-cost profiling:
+STFT e CQT: já rodaram o dataset inteiro 5x. DONE
+Nossas solucoes (single e multi level): já rodaram o dataset inteiro 1x. 2004 nao sei se 5x ou 1x
+SWGM: Já rodou o dataset inteiro 1x. 2004 nao sei se 5x ou 1x
 
-coisas que dá pra medir: número de ffts, array functions(convolve, prod, ), número total de chamadas de funcao
+prox passos: rodar nossas solucoes mais 4x no dataset inteiro. primeiro, single level.
 
-fazer análise forma fechada.
-msg guili, joao
-deixar exp pronto pra ser rodado
-email feulo.. melhor amanhã depois do teste da internet em camposh
-
-voxau alexa
-
-====================
-
-reuniao mqz:
-
-explicar experimento em niveis, tamanho dos kerneis, pcts
-mostrar resultados
-confirmar de fazer aquela análise das chamadas de funcao para um só arquivo, memória tb
-analise teórica: não seria melhor mostrar dados da performance do código?
-
-=====================
-
-rodar cada arq 5 vezes
-
-rodou até 57.. agora testando sem o SWGM
+checar de novo implementacoes - "bug" dos 4 niveis

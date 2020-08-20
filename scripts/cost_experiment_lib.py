@@ -140,13 +140,13 @@ def hz_to_cents(hz_resolution):
 def hz_to_binperoct(hz_resolution):
     return int(np.ceil(1200 / hz_to_cents(hz_resolution)))
 
-def get_refine_map(midi_file, kernel, timestamp, num_time_frames, n_fft=512, hop_size=512//4):
+def get_refine_map(midi_file, kernel, timestamp, num_time_frames, n_fft=512, hop_size=512):
     midi = mido.MidiFile(midi_file)
     proll = midi_to_piano_roll_new(midi, timestamp)
     proll_den = calc_map_aug2(sound_event_to_tfp(proll, num_time_frames, n_fft=n_fft), kernel, type='avg', n_fft=n_fft, hop_size=hop_size)
     return np.array(proll_den > 0, dtype=int)
 
-def get_pct_to_refine(midi_file, kernel, timestamp, n_fft=512, hop_size=512//4):
+def get_pct_to_refine(midi_file, kernel, timestamp, n_fft=512, hop_size=512):
     num_time_frames = int(np.ceil(44100 * 30 / hop_size))
     refine_map = get_refine_map(midi_file, kernel, timestamp, num_time_frames, n_fft=n_fft, hop_size=hop_size)
     return 100*(np.sum(refine_map)/refine_map.size)
@@ -172,7 +172,7 @@ def all_overlapping_ranges(range_list_1, range_list_2):
             overlapping_ranges.append(range)
     return overlapping_ranges
 
-def get_pct_to_refine_multilevel(midi_file, kernel_list, timestamp, n_fft=512, hop_size=512//4, y=None):
+def get_pct_to_refine_multilevel(midi_file, kernel_list, timestamp, n_fft=512, hop_size=512, y=None):
 # 1. pegar kernel primeiro nivel, ver no ground truth as regioes relevantes, guardar os ranges.
 # 2. pegar kernel segundo, ver no ground truth as regioes relevantes, guardar os ranges.
 # 3. ver overlap entre passo 2 e 1 = n
