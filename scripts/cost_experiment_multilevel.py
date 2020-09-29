@@ -41,7 +41,7 @@ def get_pcts(pcts, file):
             pcts_file['pct_multilevel_2'], pcts_file['pct_multilevel_3'], pcts_file['pct_multilevel_4'])
 
 def main(num_file):
-	# result_file = '../notebooks/cost-experiment/results/results_250820_ers_single.csv'
+	# result_file = '../notebooks/cost-experiment/results/results_250820_ers_multi.csv'
 	# with open(result_file, 'w') as csvfile:
 	#     writer = csv.writer(csvfile, delimiter=';')
 	#     writer.writerow(['file name', 'representation', 'max res', 'timeit', 'pct refine'])
@@ -75,7 +75,7 @@ def main(num_file):
 	model_500 = pickle.load(open('../notebooks/renyi_shannon_prollharm_500.sav', 'rb'))
 	model_800 = pickle.load(open('../notebooks/renyi_shannon_prollharm_800.sav', 'rb'))
 
-	size_batch = 45
+	size_batch = 30
 	j = size_batch*(num_file)
 	stop_file = size_batch*(num_file+1)
 	if stop_file > len(file_names):
@@ -148,65 +148,65 @@ def main(num_file):
 					res += 1
 
 				try:
-					start = timer()
-					_ = our_solution(y, res, [200,200], model_200, pct_200, n_fft=n_fft, hop_size=hop_size)
-					end = timer()
-					result_OURS_200 = end - start
-					print(result_OURS_200)
-
-					start = timer()
-					_ = our_solution(y, res, [500,500], model_500, pct_500, n_fft=n_fft, hop_size=hop_size)
-					end = timer()
-					result_OURS_500 = end - start
-					print(result_OURS_500)
-
-					start = timer()
-					_ = our_solution(y, res, [800,800], model_800, pct_800, n_fft=n_fft, hop_size=hop_size)
-					end = timer()
-					result_OURS_800 = end - start
-					print(result_OURS_800)
-
-					start = timer()
-					_ = our_solution(y, res, [1600,1600], model_800, pct_1600, n_fft=n_fft, hop_size=hop_size)        
-					end = timer()
-					result_OURS_1600 = end - start
-					print(result_OURS_1600)
+					# start = timer()
+					# _ = our_solution(y, res, [200,200], model_200, pct_200, n_fft=n_fft, hop_size=hop_size)
+					# end = timer()
+					# result_OURS_200 = end - start
+					# print(result_OURS_200)
 
 					# start = timer()
-					# _ = our_solution_multilevel(y, res_lists_2lvl[i], [[1600,1600], [800,800]], model_800, pct_multilevel_2, sr=44100, n_fft=n_fft, hop_size=n_fft)
+					# _ = our_solution(y, res, [500,500], model_500, pct_500, n_fft=n_fft, hop_size=hop_size)
 					# end = timer()
-					# result_OURS_2lvl = end - start
-					# print(result_OURS_2lvl)
+					# result_OURS_500 = end - start
+					# print(result_OURS_500)
 
 					# start = timer()
-					# _ = our_solution_multilevel(y, res_lists_3lvl[i], [[1600,1600], [800,800], [400,400]], model_800, pct_multilevel_3, sr=44100, n_fft=n_fft, hop_size=n_fft)
+					# _ = our_solution(y, res, [800,800], model_800, pct_800, n_fft=n_fft, hop_size=hop_size)
 					# end = timer()
-					# result_OURS_3lvl = end - start
-					# print(result_OURS_3lvl)
+					# result_OURS_800 = end - start
+					# print(result_OURS_800)
 
 					# start = timer()
-					# _ = our_solution_multilevel(y, res_lists_4lvl[i], [[1600,1600], [800,800], [400,400], [200,200]], model_800, pct_multilevel_4, sr=44100, n_fft=n_fft, hop_size=n_fft)
+					# _ = our_solution(y, res, [1600,1600], model_800, pct_1600, n_fft=n_fft, hop_size=hop_size)        
 					# end = timer()
-					# result_OURS_4lvl = end - start
-					# print(result_OURS_4lvl)
+					# result_OURS_1600 = end - start
+					# print(result_OURS_1600)
+
+					start = timer()
+					_ = our_solution_multilevel(y, res_lists_2lvl[i], [[1600,1600], [800,800]], model_800, pct_multilevel_2, sr=44100, n_fft=n_fft, hop_size=n_fft)
+					end = timer()
+					result_OURS_2lvl = end - start
+					print(result_OURS_2lvl)
+
+					start = timer()
+					_ = our_solution_multilevel(y, res_lists_3lvl[i], [[1600,1600], [800,800], [400,400]], model_800, pct_multilevel_3, sr=44100, n_fft=n_fft, hop_size=n_fft)
+					end = timer()
+					result_OURS_3lvl = end - start
+					print(result_OURS_3lvl)
+
+					start = timer()
+					_ = our_solution_multilevel(y, res_lists_4lvl[i], [[1600,1600], [800,800], [400,400], [200,200]], model_800, pct_multilevel_4, sr=44100, n_fft=n_fft, hop_size=n_fft)
+					end = timer()
+					result_OURS_4lvl = end - start
+					print(result_OURS_4lvl)
 
 				except:
 					print("erro nos timers")
 
-				result_file = '../notebooks/cost-experiment/results/results_250820_ers_single.csv'
+				result_file = '../notebooks/cost-experiment/results/results_250820_ers_multi.csv'
 
 				with open(result_file, 'a') as csvfile:
 					writer = csv.writer(csvfile, delimiter=';')
 					# writer.writerow([file, 'STFT', res_window[i], str(result_stft)])
 					# writer.writerow([file, 'CQT', res_window[i], str(result_cqt)])
 					# writer.writerow([file, 'SWGM', res_window[i], str(result_swgm)])
-					writer.writerow([file, 'economic 200', res_window[i], str(result_OURS_200), pct_200])
-					writer.writerow([file, 'economic 500', res_window[i], str(result_OURS_500), pct_500])
-					writer.writerow([file, 'economic 800', res_window[i], str(result_OURS_800), pct_800])
-					writer.writerow([file, 'economic 1600', res_window[i], str(result_OURS_1600), pct_1600])
-					# writer.writerow([file, 'economic 2 lvl', res_window[i], str(result_OURS_2lvl), pct_multilevel_2])
-					# writer.writerow([file, 'economic 3 lvl', res_window[i], str(result_OURS_3lvl), pct_multilevel_3])
-					# writer.writerow([file, 'economic 4 lvl', res_window[i], str(result_OURS_4lvl), pct_multilevel_4])
+					# writer.writerow([file, 'economic 200', res_window[i], str(result_OURS_200), pct_200])
+					# writer.writerow([file, 'economic 500', res_window[i], str(result_OURS_500), pct_500])
+					# writer.writerow([file, 'economic 800', res_window[i], str(result_OURS_800), pct_800])
+					# writer.writerow([file, 'economic 1600', res_window[i], str(result_OURS_1600), pct_1600])
+					writer.writerow([file, 'economic 2 lvl', res_window[i], str(result_OURS_2lvl), pct_multilevel_2])
+					writer.writerow([file, 'economic 3 lvl', res_window[i], str(result_OURS_3lvl), pct_multilevel_3])
+					writer.writerow([file, 'economic 4 lvl', res_window[i], str(result_OURS_4lvl), pct_multilevel_4])
 
 	end_abs = timer()
 

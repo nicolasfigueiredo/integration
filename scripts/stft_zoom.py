@@ -39,7 +39,7 @@ def filter_and_mod(y, freq_range, sr):
     inverted = False # if undersampling is performed with an even 'n', the spectrum is mirrored and will be unmirrored afterwards
 
     if freq_range[0] <= 400:
-        return filter_lowpass(y, freq_range[1], sr), 2*(freq_range[1]+100), 0, inverted
+        return filter_lowpass(y, freq_range[1]+100, sr), 2*(freq_range[1]+100), 0, inverted
       
     wp = np.array([freq_range[0] - 100, freq_range[1] + 100]) # passbands 
     ws = np.array([wp[0] - 150, wp[1] + 200]) # stopbands
@@ -124,13 +124,15 @@ def subsample_signal(y, new_sr, sr):
     subsample_step = int(np.ceil(sr/new_sr)) # take 1 out of every subsample_step samples of y
     return y[::subsample_step], sr/subsample_step  # subsampled signal, new_sr
 
-def analyze_slice(y, new_sr, original_resolution, k=2):
+def analyze_slice(y, new_sr, original_resolution, k=2, hop_size_s=512/44100):
     # Returns the STFT matrix of y in the freq_range x time_range, with a frequency resolution
     # determined by the factor k: new_resolution = k * original_resolution
     new_resolution = original_resolution / k
     window_size = int(new_sr / new_resolution)
-    hop_size = window_size
-    return np.abs(librosa.stft(np.asfortranarray(y), n_fft=window_size, hop_length=hop_size)), window_size, hop_size
+    # hop_size = window_size
+    hop_size = int(hop_size_s * new_sr)
+    # print(new_sr, window_size, hop_size, len(y))
+    return np.abs(librosa.stft(np.asfortranarray(y), n_fft=window_size, hop_length=hop_size, center=True)), window_size, hop_size
 
 def unmirror(stft_zoom, y_axis, freq_range):
 #   Unmirror spectrum originally mirrored by the undersampling process
@@ -211,15 +213,21 @@ def stft_zoom(y, freq_range, time_range, sr=44100, original_window_size=2048, k=
     # ("guard bands" are used in the bandpass and lowpass filters in order to not distort the frequency
     # band specified)
     y_start = np.searchsorted(y_axis, freq_range[0], side="left")
-    y_end   = np.searchsorted(y_axis, freq_range[1], side="left") + 1
+    y_end   = np.searchsorted(y_axis, freq_range[1], side="left")
+
     if y_end >= len(y_axis):
         y_end = len(y_axis) - 1
 
     if y_end == y_start:
         y_end += 1
+    if y_axis[y_start] > freq_range[0] and y_start>0:
+        y_start -=1
+    if y_axis[y_end] < freq_range[1] and y_end<=len(y_axis)-1:
+        y_end -=1
+
 
     # stft matrix, x axis, y axis, new sampling rate, window size and hop size used in this new STFT
-    return stft_zoom[y_start:y_end,:], x_axis, y_axis[y_start:y_end], new_sr, new_window_size, new_hop_size
+    return stft_zoom[y_start:y_end+1,:], x_axis, y_axis[y_start:y_end+1], new_sr, new_window_size, new_hop_size
 
 def stft_zoom_nobank(y, freq_range, time_range, sr=44100, original_window_size=2048, k=2):
     # stft_zoom() that does not use a pre-computed signal bank, for the purpose of comparing performances
@@ -246,10 +254,12 @@ def stft_zoom_nobank(y, freq_range, time_range, sr=44100, original_window_size=2
     # Slice the spectrogram in order to represent only the specified frequency range
     # ("guard bands" are used in the bandpass and lowpass filters in order to not distort the frequency
     # band specified)
-    y_start = np.searchsorted(y_axis, freq_range[0], side="left")
+    y_start = np.searchsorted(y_axis, freq_range[0], side="left") - 1
     y_end   = np.searchsorted(y_axis, freq_range[1], side="left") + 1
     if y_end >= len(y_axis):
         y_end = len(y_axis) - 1
+    if y_start < 0:
+        y_start = 0
 
     if y_end == y_start:
         y_end += 1

@@ -41,23 +41,29 @@ def get_pcts(pcts, file):
             pcts_file['pct_multilevel_2'], pcts_file['pct_multilevel_3'], pcts_file['pct_multilevel_4'])
 
 def main():
-	result_file = '../notebooks/cost-experiment/results/results_040820_stft_cqt.csv'
+	result_file = '../notebooks/cost-experiment/results/results_250820_stft.csv'
 	with open(result_file, 'w') as csvfile:
 	    writer = csv.writer(csvfile, delimiter=';')
 	    writer.writerow(['file name', 'representation', 'max res', 'timeit', 'pct refine'])
 	print("csv overwritten")
 
-	file_name = '../data/MIDI-Unprocessed_XP_09_R1_2004_05_ORIG_MID--AUDIO_09_R1_2004_06_Track06_wav.wav'
-	y, sr = librosa.load(file_name, sr=44100)
-	y = y[:44100*10]
+	# file_name = '../data/MIDI-Unprocessed_XP_09_R1_2004_05_ORIG_MID--AUDIO_09_R1_2004_06_Track06_wav.wav'
+	# y, sr = librosa.load(file_name, sr=44100)
+	# y = y[:44100*10]
 
-	_ = librosa.cqt(y)
+	# _ = librosa.cqt(y)
 
 	file_names = []
-	for year in ['2006','2008','2009','2011','2013','2014','2015']:
-	    path = '/Volumes/HD-NICO/vaio-backup/Documents/ime/compmus/mestrado/maestro-v2.0.0/' + year + '/*.wav'
+	for year in ['2004']:
+	    path = '../../../maestro-dataset/' + year + '/*.wav'
 	    for file in glob.glob(path):
 	        file_names.append(file[:-4])
+
+	# file_names = []
+	# for year in ['2006','2008','2009','2011','2013','2014','2015']:
+	#     path = '/Volumes/HD-NICO/vaio-backup/Documents/ime/compmus/mestrado/maestro-v2.0.0/' + year + '/*.wav'
+	#     for file in glob.glob(path):
+	#         file_names.append(file[:-4])
 
 	print("files fetched: ",len(file_names))
 
@@ -72,7 +78,7 @@ def main():
 					'/Volumes/HD-NICO/vaio-backup/Documents/ime/compmus/mestrado/maestro-v2.0.0/2015/MIDI-Unprocessed_R1_D1-1-8_mid--AUDIO-from_mp3_06_R1_2015_wav--1']
 
 	j = 0
-	for N in range(5):
+	for N in range(1):
 		j = 0
 		for file in file_names:
 			if file in black_list:
@@ -96,18 +102,18 @@ def main():
 
 				#STFT
 				start = timer()
-				_ = librosa.stft(y, n_fft=res, hop_length=res)
+				_ = librosa.stft(y, n_fft=res, hop_length=512)
 				end = timer()
 				result_stft = (end - start)
 				print("STFT time: ", result_stft)
 
 				#CQT
-				bpo = hz_to_binperoct(res_hz[i])
-				start = timer()
-				_ = librosa.cqt(y, sr=sr, bins_per_octave=bpo, fmin=20, n_bins=10*bpo)
-				end = timer()
-				result_cqt = (end - start)
-				print("CQT time: ", result_cqt)
+				# bpo = hz_to_binperoct(res_hz[i])
+				# start = timer()
+				# _ = librosa.cqt(y, sr=sr, bins_per_octave=bpo, fmin=20, n_bins=10*bpo, hop_length=512)
+				# end = timer()
+				# result_cqt = (end - start)
+				# print("CQT time: ", result_cqt)
 
 				# LUKIN-TODD, SLS, SWGM
 				# max_window = res_window[i]
@@ -118,12 +124,12 @@ def main():
 				# result_swgm = (end - start)
 				# print(result_swgm)
 
-				result_file = '../notebooks/cost-experiment/results/results_040820_stft_cqt.csv'
+				result_file = '../notebooks/cost-experiment/results/results_250820_stft.csv'
 
 				with open(result_file, 'a') as csvfile:
 					writer = csv.writer(csvfile, delimiter=';')
 					writer.writerow([file, 'STFT', res_window[i], str(result_stft)])
-					writer.writerow([file, 'CQT', res_window[i], str(result_cqt)])
+					# writer.writerow([file, 'CQT', res_window[i], str(result_cqt)])
 					# writer.writerow([file, 'SWGM', res_window[i], str(result_swgm)])
 
 if __name__ == '__main__':

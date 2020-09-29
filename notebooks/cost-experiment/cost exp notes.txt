@@ -41,10 +41,16 @@ To dos:
 
 ====================
 
-STFT e CQT: já rodaram o dataset inteiro 5x. DONE
-Nossas solucoes (single e multi level): já rodaram o dataset inteiro 1x. 2004 nao sei se 5x ou 1x
-SWGM: Já rodou o dataset inteiro 1x. 2004 nao sei se 5x ou 1x
+Rodar de novo o algoritmo com as alterações... primeiro rodando só pra 2014
+tirar arquivo 125 das nossas solucoes: /Users/nicolas/Documents/ime/compmus/mestrado/maestro-dataset/2004/MIDI-Unprocessed_SMF_05_R1_2004_02-03_ORIG_MID--AUDIO_05_R1_2004_06_Track06_wav 
+file 2 deu ruim nas pct pro multinivel
 
-prox passos: rodar nossas solucoes mais 4x no dataset inteiro. primeiro, single level.
+fechei mac no file 12 round 4
 
-checar de novo implementacoes - "bug" dos 4 niveis
+REFAZER EXP DE MEMÓRIA TB
+
+PENDENCIAS - COST
+
+- rodar 2004 5 vezes - check
+- rodar pro resto do dataset 5 vezes - single level - rodou 2x, parou no 467 3o round. rodou mais um round, parou no 149
+- rodar pro resto do dataset 5 vezes - multi level - parou no segundo round, arquivo 251

@@ -3,6 +3,7 @@ import scipy.stats
 from librosa import amplitude_to_db
 from fast_histogram import histogram1d
 from util import find_nearest
+from librosa import frames_to_time
 
 # This script contains functions that perform feature extraction from a spectrogram.
 # The main function is calc_map_aug2(), that subdivides a spectrogram into subregions of
@@ -111,11 +112,8 @@ def extract_features(spec_amp, kernel_dimensions, n_fft=2048, hop_size=512, sr=4
     else:
         idx_list = find_freq_list(fft_freqs, kernel_dimensions[1]) # para calcular mapa de regiões refinadas, já passamos o eixo de frequências
 
-    delta_t_ms = kernel_dimensions[0]   # dimensão em ms
-
-    # ms_per_frame = (n_fft+hop_size) * 1000 / (sr*2)   # discussão
     ms_per_frame = hop_size * 1000 / sr
-    delta_t = int(np.round(delta_t_ms / ms_per_frame))
+    delta_t = int(np.round(kernel_dimensions[0] / ms_per_frame))
 
     if len(idx_list) == 1:
         mapping_shannon = np.zeros([1, spec_amp.shape[1]//delta_t])

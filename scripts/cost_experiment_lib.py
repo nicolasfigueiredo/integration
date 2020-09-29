@@ -24,6 +24,20 @@ import timeit
 import csv
 import mido
 
+def energy_reference(y, time_range, freq_range, sr=44100):
+    y_slice = y[math.floor(time_range[0] * sr): math.floor(time_range[1] * sr)]
+    spec = np.fft.rfft(y_slice)
+    freqs = np.fft.rfftfreq(len(y_slice), 1./sr)
+    idx_start = find_nearest(freqs, freq_range[0])
+    idx_stop = find_nearest(freqs, freq_range[1])
+    return np.sum(np.abs(spec[idx_start:idx_stop])**2) * 2 / len(y_slice)
+
+def normalize_subregion(spec_zoom, time_range, freq_range, y):
+    energy_ref = energy_reference(y, time_range, freq_range)
+    energy_old = np.sum(spec_zoom ** 2)
+    return math.sqrt(energy_ref / energy_old) * spec_zoom
+
+
 def calc_kernel_size(window_lengths, energy=False):
     if energy:
         P = 2
@@ -50,10 +64,10 @@ def SLS_time(y, window_lengths, kernel_anal, kernel_energy):
     specs = util_m.interpol_and_normalize(specs)
     return local_sparsity.smoothed_local_sparsity(specs, kernel_anal, kernel_energy)
 
-def our_solution(y, res, kernel, model, pct, sr=44100, n_fft=512, hop_size=128):
+def our_solution(y, res, kernel, model, pct, sr=44100, n_fft=512, hop_size=512):
     spec = np.abs(librosa.stft(y, n_fft=n_fft, hop_length=hop_size))
     time_span = [0,len(y)/sr]
-    x_axis, y_axis = stft_zoom.get_axes_values(sr, 0, time_span, spec.shape) 
+    x_axis, y_axis = stft_zoom.get_axes_values(sr, 0, time_span, spec.shape)
     base_spec = SingleResSpectrogram(spec, x_axis, y_axis)
     multires_spec = MultiResSpectrogram(base_spec)
     indices, original_shape = detect_musical_regions.detect_musical_regions(model, spec, kernel=kernel, mode='pct', pct_or_threshold=pct, n_fft=n_fft, hop_size=hop_size)
@@ -70,7 +84,7 @@ def our_solution(y, res, kernel, model, pct, sr=44100, n_fft=512, hop_size=128):
         
     return multires_spec
 
-def our_solution_multilevel(y, res_list, kernel_list, model, pct_list, sr=44100, n_fft=512, hop_size=128):
+def our_solution_multilevel(y, res_list, kernel_list, model, pct_list, sr=44100, n_fft=512, hop_size=512):
     o_n_fft = n_fft
     o_hop_size = hop_size
     spec = np.abs(librosa.stft(y, n_fft=n_fft, hop_length=hop_size))
@@ -117,15 +131,22 @@ def our_solution_multilevel(y, res_list, kernel_list, model, pct_list, sr=44100,
                 continue
             
             indices, original_shape = detect_musical_regions.detect_musical_regions(model, spec, mode='pct', pct_or_threshold=pct_list[i-1], kernel=kernel, n_fft=window_size, hop_size=hop_size, sr=sr, y_axis=y_axis)
-            to_be_further_refined = to_be_further_refined + detect_musical_regions.musical_regions_to_ranges(indices, original_shape, x_axis, y_axis, kernel, sr=sr, hop_size=hop_size)
+            to_be_further_refined = to_be_further_refined + detect_musical_regions.musical_regions_to_ranges(indices, original_shape, x_axis, y_axis, kernel, sr=sr, hop_size=hop_size, n_fft=window_size)
 
         sr = 44100
         hop_size = o_hop_size
         n_fft = o_n_fft
+        time_step = o_hop_size / sr
 #         print(kernel, len(to_be_further_refined))
         for subregion in to_be_further_refined:
             freq_range = subregion[0]
             time_range = subregion[1]
+            # Compensacao da centralizacao das janelas no tempo e STFT centrada em 0
+            time_range[0] -= time_step/2
+            time_range[1] += time_step/2
+            if time_range[0] < 0:
+                time_range[0] = 0
+
             spec_zoom, x_axis, y_axis, new_sr, window_size, hop_size = stft_zoom.stft_zoom_nobank(y, freq_range, time_range, sr=sr, original_window_size=n_fft, k=res_list[i-1])
             refined_subspec = SingleResSpectrogram(spec_zoom, x_axis, y_axis, n_fft=window_size, hop_size=hop_size, sr=new_sr)
             multires_spec.insert_zoom(multires_spec.base_spec, refined_subspec, zoom_level=i, normalize=False)

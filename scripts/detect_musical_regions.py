@@ -35,30 +35,42 @@ def musical_regions_to_ranges(indices, original_shape, x_axis, y_axis, kernel, s
     # frequency and time ranges of such regions.
     ranges = []
     for idx in indices:
-        ranges.append(index_to_range(np.unravel_index(idx, original_shape), x_axis, y_axis, kernel, sr=sr, n_fft=n_fft, hop_size=hop_size))
+        ranges.append(index_to_range(idx, original_shape, x_axis, y_axis, kernel, sr=sr, n_fft=n_fft, hop_size=hop_size))
     return ranges
 
-def index_to_range(idx, x_axis, y_axis, kernel, sr=44100, n_fft=2048, hop_size=512):
+def index_to_range(idx, original_shape, x_axis, y_axis, kernel, sr=44100, n_fft=2048, hop_size=512):
     # Given an index of the feature matrix and the kernel dimensions that were used to compute such feature matrix,
     # return the corresponding freq. range and time range that determine this subregion of the time-freq. plane    
-    idx_x = idx[1]
-    idx_y = idx[0]
-    freq_idx_list = mappings.find_freq_list(y_axis, kernel[1]) # find frequencies that correspond to the y_axis of the feature map
-    ms_per_frame = hop_size * 1000 / sr
-    delta_x_idx = int(np.round(kernel[0] / ms_per_frame)) # each "block" of the feature map lies between x_axis[i] and x_axis[i+delta_x_idx] 
-    # if delta_x_idx == 1:
-    #     delta_x_idx += 1
-    freq_range = [y_axis[freq_idx_list[idx_y]], y_axis[freq_idx_list[idx_y+1]]]
-    end_point = (idx_x+1)*delta_x_idx
-    if end_point >= len(x_axis):
-        end_point = len(x_axis) - 1
-    start_point = idx_x*delta_x_idx
-    if start_point == end_point:
-        start_point -= 1
+    idx_y, idx_x = np.unravel_index(idx, original_shape)
 
-    time_range = [x_axis[start_point], x_axis[end_point]]
-    # if kernel == [100,100]:
-    #     print(ms_per_frame, delta_x_idx, time_range)
+    if original_shape[0] == 1:
+        freq_range = [y_axis[0], y_axis[-1]]
+    else:
+        freq_idx_list = mappings.find_freq_list(y_axis, kernel[1]) # find frequencies that correspond to the y_axis of the feature map
+        freq_range = [y_axis[freq_idx_list[idx_y]], y_axis[freq_idx_list[idx_y+1]]]
+    
+    if original_shape[1] == 1:
+        time_range = [x_axis[0], x_axis[-1]]
+    else:
+        ms_per_frame = hop_size * 1000 / sr
+        delta_x_idx = int(np.round(kernel[0] / ms_per_frame)) # each "block" of the feature map lies between x_axis[i] and x_axis[i+delta_x_idx] 
+        # if delta_x_idx == 1:
+        #     delta_x_idx += 1
+        end_point = (idx_x+1)*delta_x_idx
+        if end_point >= len(x_axis):
+            end_point = len(x_axis) - 1
+        start_point = idx_x*delta_x_idx
+        if start_point == end_point:
+            start_point -= 1
+        time_range = [x_axis[start_point], x_axis[end_point]]
+
+    # compensação da centralização das janelas
+    time_step = hop_size / sr
+    time_range[0] -= time_step/2
+    time_range[1] += time_step/2
+    if time_range[0] < 0:
+        time_range[0] = 0
+    
     return freq_range, time_range
 
 # Should be moved to the MultiResSpec() class in the future
