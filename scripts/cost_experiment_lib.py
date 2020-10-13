@@ -9,15 +9,14 @@ sys.path.insert(0, '../scripts')
 sys.path.insert(0, '../scripts/mauricio_solutions/')
 import lukin_todd, swgm, local_sparsity, util_m
 
-import stft_zoom, display, detect_musical_regions
+import stft_zoom, detect_musical_regions
 from util import *
 import mappings
 import pickle
 import PIL
-import IPython.display
 from classes import SingleResSpectrogram, MultiResSpectrogram
 import glob
-from aug_density_map import *
+# from aug_density_map import *
 from mappings import *
 
 import timeit
@@ -64,27 +63,27 @@ def SLS_time(y, window_lengths, kernel_anal, kernel_energy):
     specs = util_m.interpol_and_normalize(specs)
     return local_sparsity.smoothed_local_sparsity(specs, kernel_anal, kernel_energy)
 
-def our_solution(y, res, kernel, model, pct, sr=44100, n_fft=512, hop_size=512):
+def ers(y, res, kernel, model, pct, sr=44100, n_fft=512, hop_size=512, normalize=True):
     spec = np.abs(librosa.stft(y, n_fft=n_fft, hop_length=hop_size))
     time_span = [0,len(y)/sr]
-    x_axis, y_axis = stft_zoom.get_axes_values(sr, 0, time_span, spec.shape)
+    x_axis, y_axis = stft_zoom.get_axes_values(sr, 0, time_span, spec.shape) 
     base_spec = SingleResSpectrogram(spec, x_axis, y_axis)
     multires_spec = MultiResSpectrogram(base_spec)
     indices, original_shape = detect_musical_regions.detect_musical_regions(model, spec, kernel=kernel, mode='pct', pct_or_threshold=pct, n_fft=n_fft, hop_size=hop_size)
     to_be_refined = detect_musical_regions.musical_regions_to_ranges(indices, original_shape, x_axis, y_axis, kernel, n_fft=n_fft, hop_size=hop_size)
 
-    stft_zoom.set_signal_bank(y,kernel)
+    stft_zoom.set_signal_bank(y,kernel, n_fft=n_fft)
 
     for subregion in to_be_refined:
         freq_range = subregion[0]
         time_range = subregion[1]
         spec_zoom, x_axis, y_axis, new_sr, window_size, hop_size = stft_zoom.stft_zoom(y, freq_range, time_range, sr=sr, original_window_size=n_fft, k=res)
         refined_subspec = SingleResSpectrogram(spec_zoom, x_axis, y_axis)
-        multires_spec.insert_zoom(multires_spec.base_spec, refined_subspec, zoom_level=1)
+        multires_spec.insert_zoom(multires_spec.base_spec, refined_subspec, freq_range, zoom_level=1, normalize=normalize)
         
     return multires_spec
 
-def our_solution_multilevel(y, res_list, kernel_list, model, pct_list, sr=44100, n_fft=512, hop_size=512):
+def ers_multilevel(y, res_list, kernel_list, model, pct_list, sr=44100, n_fft=512, hop_size=512, normalize=True):
     o_n_fft = n_fft
     o_hop_size = hop_size
     spec = np.abs(librosa.stft(y, n_fft=n_fft, hop_length=hop_size))
@@ -97,15 +96,14 @@ def our_solution_multilevel(y, res_list, kernel_list, model, pct_list, sr=44100,
     indices, original_shape = detect_musical_regions.detect_musical_regions(model, spec, kernel=kernel, mode='pct', pct_or_threshold=pct_list[0], n_fft=n_fft, hop_size=hop_size)
     to_be_refined = detect_musical_regions.musical_regions_to_ranges(indices, original_shape, x_axis, y_axis, kernel, n_fft=n_fft, hop_size=hop_size)
 
-    stft_zoom.set_signal_bank(y,kernel)
+    stft_zoom.set_signal_bank(y,kernel, n_fft=n_fft)
     
-#     print(kernel, len(to_be_refined))
     for subregion in to_be_refined:
         freq_range = subregion[0]
         time_range = subregion[1]
         spec_zoom, x_axis, y_axis, new_sr, window_size, hop_size = stft_zoom.stft_zoom(y, freq_range, time_range, sr=sr, original_window_size=n_fft, k=res_list[0])
         refined_subspec = SingleResSpectrogram(spec_zoom, x_axis, y_axis, n_fft=window_size, hop_size=hop_size, sr=new_sr)
-        multires_spec.insert_zoom(multires_spec.base_spec, refined_subspec, zoom_level=1)
+        multires_spec.insert_zoom(multires_spec.base_spec, refined_subspec, freq_range, zoom_level=1, normalize=normalize)
         
     i = 1
     for kernel in kernel_list[1:]:
@@ -131,25 +129,26 @@ def our_solution_multilevel(y, res_list, kernel_list, model, pct_list, sr=44100,
                 continue
             
             indices, original_shape = detect_musical_regions.detect_musical_regions(model, spec, mode='pct', pct_or_threshold=pct_list[i-1], kernel=kernel, n_fft=window_size, hop_size=hop_size, sr=sr, y_axis=y_axis)
-            to_be_further_refined = to_be_further_refined + detect_musical_regions.musical_regions_to_ranges(indices, original_shape, x_axis, y_axis, kernel, sr=sr, hop_size=hop_size, n_fft=window_size)
+            to_be_further_refined.append([spec_zoom, detect_musical_regions.musical_regions_to_ranges(indices, original_shape, x_axis, y_axis, kernel, sr=sr, hop_size=hop_size)])
 
         sr = 44100
         hop_size = o_hop_size
         n_fft = o_n_fft
         time_step = o_hop_size / sr
-#         print(kernel, len(to_be_further_refined))
         for subregion in to_be_further_refined:
-            freq_range = subregion[0]
-            time_range = subregion[1]
-            # Compensacao da centralizacao das janelas no tempo e STFT centrada em 0
-            time_range[0] -= time_step/2
-            time_range[1] += time_step/2
-            if time_range[0] < 0:
-                time_range[0] = 0
+            base_spec = subregion[0]
+            for ranges in subregion[1]:
+                freq_range = ranges[0]
+                time_range = ranges[1]
+                # Compensacao da centralizacao das janelas no tempo e STFT centrada em 0
+                time_range[0] -= time_step/2
+                time_range[1] += time_step/2
+                if time_range[0] < 0:
+                    time_range[0] = 0
 
-            spec_zoom, x_axis, y_axis, new_sr, window_size, hop_size = stft_zoom.stft_zoom_nobank(y, freq_range, time_range, sr=sr, original_window_size=n_fft, k=res_list[i-1])
-            refined_subspec = SingleResSpectrogram(spec_zoom, x_axis, y_axis, n_fft=window_size, hop_size=hop_size, sr=new_sr)
-            multires_spec.insert_zoom(multires_spec.base_spec, refined_subspec, zoom_level=i, normalize=False)
+                spec_zoom, x_axis, y_axis, new_sr, window_size, hop_size = stft_zoom.stft_zoom(y, freq_range, time_range, sr=sr, original_window_size=n_fft, k=res_list[i-1])
+                refined_subspec = SingleResSpectrogram(spec_zoom, x_axis, y_axis, n_fft=window_size, hop_size=hop_size, sr=new_sr)
+                multires_spec.insert_zoom(base_spec, refined_subspec, freq_range, zoom_level=i, normalize=normalize)
     return multires_spec
 
 def hz_to_cents(hz_resolution):

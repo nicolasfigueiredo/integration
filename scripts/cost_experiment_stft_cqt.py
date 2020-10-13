@@ -19,7 +19,6 @@ from aug_density_map import *
 from mappings import *
 
 import csv
-import mido
 from cost_experiment_lib import *
 from timeit import default_timer as timer
 
@@ -41,17 +40,17 @@ def get_pcts(pcts, file):
             pcts_file['pct_multilevel_2'], pcts_file['pct_multilevel_3'], pcts_file['pct_multilevel_4'])
 
 def main():
-	result_file = '../notebooks/cost-experiment/results/results_250820_stft.csv'
+	result_file = '../notebooks/cost-experiment/results/results_final_ers/results_others.csv'
 	with open(result_file, 'w') as csvfile:
 	    writer = csv.writer(csvfile, delimiter=';')
 	    writer.writerow(['file name', 'representation', 'max res', 'timeit', 'pct refine'])
 	print("csv overwritten")
 
-	# file_name = '../data/MIDI-Unprocessed_XP_09_R1_2004_05_ORIG_MID--AUDIO_09_R1_2004_06_Track06_wav.wav'
-	# y, sr = librosa.load(file_name, sr=44100)
-	# y = y[:44100*10]
+	file_name = '../data/MIDI-Unprocessed_XP_09_R1_2004_05_ORIG_MID--AUDIO_09_R1_2004_06_Track06_wav.wav'
+	y, sr = librosa.load(file_name, sr=44100)
+	y = y[:44100*10]
 
-	# _ = librosa.cqt(y)
+	_ = librosa.cqt(y)
 
 	file_names = []
 	for year in ['2004']:
@@ -78,7 +77,7 @@ def main():
 					'/Volumes/HD-NICO/vaio-backup/Documents/ime/compmus/mestrado/maestro-v2.0.0/2015/MIDI-Unprocessed_R1_D1-1-8_mid--AUDIO-from_mp3_06_R1_2015_wav--1']
 
 	j = 0
-	for N in range(1):
+	for N in range(5):
 		j = 0
 		for file in file_names:
 			if file in black_list:
@@ -108,29 +107,28 @@ def main():
 				print("STFT time: ", result_stft)
 
 				#CQT
-				# bpo = hz_to_binperoct(res_hz[i])
-				# start = timer()
-				# _ = librosa.cqt(y, sr=sr, bins_per_octave=bpo, fmin=20, n_bins=10*bpo, hop_length=512)
-				# end = timer()
-				# result_cqt = (end - start)
-				# print("CQT time: ", result_cqt)
+				bpo = hz_to_binperoct(res_hz[i])
+				start = timer()
+				_ = librosa.cqt(y, sr=sr, bins_per_octave=bpo, fmin=20, n_bins=10*bpo, hop_length=512)
+				end = timer()
+				result_cqt = (end - start)
+				print("CQT time: ", result_cqt)
 
 				# LUKIN-TODD, SLS, SWGM
-				# max_window = res_window[i]
-				# window_lengths = [int(max_window/8), int(max_window/2), max_window]
-				# start = timer()
-				# _ = swgm_time(y, window_lengths)
-				# end = timer()
-				# result_swgm = (end - start)
-				# print(result_swgm)
+				max_window = res_window[i]
+				window_lengths = [int(max_window/8), int(max_window/2), max_window]
+				start = timer()
+				_ = swgm_time(y, window_lengths)
+				end = timer()
+				result_swgm = (end - start)
+				print(result_swgm)
 
-				result_file = '../notebooks/cost-experiment/results/results_250820_stft.csv'
-
+				result_file = '../notebooks/cost-experiment/results/results_final_ers/results_others.csv'
 				with open(result_file, 'a') as csvfile:
 					writer = csv.writer(csvfile, delimiter=';')
 					writer.writerow([file, 'STFT', res_window[i], str(result_stft)])
-					# writer.writerow([file, 'CQT', res_window[i], str(result_cqt)])
-					# writer.writerow([file, 'SWGM', res_window[i], str(result_swgm)])
+					writer.writerow([file, 'CQT', res_window[i], str(result_cqt)])
+					writer.writerow([file, 'SWGM', res_window[i], str(result_swgm)])
 
 if __name__ == '__main__':
 	# print(sys.argv)

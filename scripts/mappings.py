@@ -108,7 +108,7 @@ def extract_features(spec_amp, kernel_dimensions, n_fft=2048, hop_size=512, sr=4
     # resulting matrix is returned.
 
     if fft_freqs is None:
-        idx_list = find_freq_list(fft_frequencies(sr=sr, n_fft=n_fft), kernel_dimensions[1]) # essa linha: 
+        idx_list = find_freq_list(fft_frequencies(sr=sr, n_fft=n_fft), kernel_dimensions[1]) # essa linha:
     else:
         idx_list = find_freq_list(fft_freqs, kernel_dimensions[1]) # para calcular mapa de regiões refinadas, já passamos o eixo de frequências
 

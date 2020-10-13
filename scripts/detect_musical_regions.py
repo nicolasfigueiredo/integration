@@ -47,7 +47,9 @@ def index_to_range(idx, original_shape, x_axis, y_axis, kernel, sr=44100, n_fft=
         freq_range = [y_axis[0], y_axis[-1]]
     else:
         freq_idx_list = mappings.find_freq_list(y_axis, kernel[1]) # find frequencies that correspond to the y_axis of the feature map
-        freq_range = [y_axis[freq_idx_list[idx_y]], y_axis[freq_idx_list[idx_y+1]]]
+        freq_range = [y_axis[freq_idx_list[idx_y]], y_axis[freq_idx_list[idx_y+1]]-1]
+        freq_step = y_axis[1] - y_axis[0]
+        freq_range = [freq_range[0]-freq_step/2, freq_range[1]+freq_step/2]
     
     if original_shape[1] == 1:
         time_range = [x_axis[0], x_axis[-1]]
@@ -70,21 +72,23 @@ def index_to_range(idx, original_shape, x_axis, y_axis, kernel, sr=44100, n_fft=
     time_range[1] += time_step/2
     if time_range[0] < 0:
         time_range[0] = 0
+    if freq_range[0] < 0:
+        freq_range[0] = 0
     
     return freq_range, time_range
 
 # Should be moved to the MultiResSpec() class in the future
-def insert_zoom(spec_img, zoom, time_range, freq_range, x_axis, y_axis):
-    x_start = find_nearest(x_axis, time_range[0])
-    x_end   = find_nearest(x_axis, time_range[1])
-    y_start = find_nearest(y_axis, freq_range[0])
-    y_end   = find_nearest(y_axis, freq_range[1])
+# def insert_zoom(spec_img, zoom, time_range, freq_range, x_axis, y_axis):
+#     x_start = find_nearest(x_axis, time_range[0])
+#     x_end   = find_nearest(x_axis, time_range[1])
+#     y_start = find_nearest(y_axis, freq_range[0])
+#     y_end   = find_nearest(y_axis, freq_range[1])
     
-    zoom_img = PIL.Image.fromarray(zoom).resize((x_end - x_start,y_end - y_start))
-    box = (x_start, y_start, x_end, y_end)
-    spec_img.paste(zoom_img, box)
+#     zoom_img = PIL.Image.fromarray(zoom).resize((x_end - x_start,y_end - y_start))
+#     box = (x_start, y_start, x_end, y_end)
+#     spec_img.paste(zoom_img, box)
     
-    return spec_img
+#     return spec_img
 
 
 

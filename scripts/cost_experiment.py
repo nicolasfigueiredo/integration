@@ -19,7 +19,6 @@ from aug_density_map import *
 from mappings import *
 
 import csv
-import mido
 from cost_experiment_lib import *
 from timeit import default_timer as timer
 
@@ -41,13 +40,13 @@ def get_pcts(pcts, file):
             pcts_file['pct_multilevel_2'], pcts_file['pct_multilevel_3'], pcts_file['pct_multilevel_4'])
 
 def main(num_file):
-	# result_file = '../notebooks/cost-experiment/results/results_250820_ers_single.csv'
+	# result_file = '../notebooks/cost-experiment/results/results_final_ers/results_ers_single.csv'
 	# with open(result_file, 'w') as csvfile:
 	#     writer = csv.writer(csvfile, delimiter=';')
 	#     writer.writerow(['file name', 'representation', 'max res', 'timeit', 'pct refine'])
 	# print("csv overwritten")
 
-	pcts = pd.read_csv('../notebooks/cost-experiment/results/pcts.csv', sep=';', dtype={'pct_200':float, 'pct_500':float, 'pct_800':float, 'pct_1600':float})
+	pcts = pd.read_csv('../notebooks/cost-experiment/results/pcts_all_final.csv', index_col=0, dtype={'pct_200':float, 'pct_500':float, 'pct_800':float, 'pct_1600':float})
 	pcts = treat_pcts(pcts)
 
 	file_names = []
@@ -114,33 +113,12 @@ def main(num_file):
 				print("deu ruim nas pcts")
 				continue
 
+			if pct_1600 > 55.0:
+				continue
+
 			for i in range(len(res_window)):
 				res = res_window[i]
 				print("Resolution: ", res)
-
-				# #STFT
-				# start = timer()
-				# _ = librosa.stft(y, n_fft=res, hop_length=res)
-				# end = timer()
-				# result_stft = (end - start)
-				# print(result_stft)
-
-				# #CQT
-				# bpo = hz_to_binperoct(res_hz[i])
-				# start = timer()
-				# _ = librosa.cqt(y, sr=sr, bins_per_octave=bpo, fmin=20, n_bins=10*bpo)
-				# end = timer()
-				# result_cqt = (end - start)
-				# print(result_cqt)
-
-				# LUKIN-TODD, SLS, SWGM
-				# max_window = res_window[i]
-				# window_lengths = [int(max_window/8), int(max_window/2), max_window]
-				# start = timer()
-				# _ = swgm_time(y, window_lengths)
-				# end = timer()
-				# result_swgm = (end - start)
-				# print(result_swgm)
 
 				#OUR SOLUTION
 				res = np.max([int(res_window[i] // 512), 1])
@@ -149,25 +127,25 @@ def main(num_file):
 
 				try:
 					start = timer()
-					_ = our_solution(y, res, [200,200], model_200, pct_200, n_fft=n_fft, hop_size=hop_size)
+					_ = ers(y, res, [200,200], model_200, pct_200, n_fft=n_fft, hop_size=hop_size)
 					end = timer()
 					result_OURS_200 = end - start
 					print(result_OURS_200)
 
 					start = timer()
-					_ = our_solution(y, res, [500,500], model_500, pct_500, n_fft=n_fft, hop_size=hop_size)
+					_ = ers(y, res, [500,500], model_500, pct_500, n_fft=n_fft, hop_size=hop_size)
 					end = timer()
 					result_OURS_500 = end - start
 					print(result_OURS_500)
 
 					start = timer()
-					_ = our_solution(y, res, [800,800], model_800, pct_800, n_fft=n_fft, hop_size=hop_size)
+					_ = ers(y, res, [800,800], model_800, pct_800, n_fft=n_fft, hop_size=hop_size)
 					end = timer()
 					result_OURS_800 = end - start
 					print(result_OURS_800)
 
 					start = timer()
-					_ = our_solution(y, res, [1600,1600], model_800, pct_1600, n_fft=n_fft, hop_size=hop_size)        
+					_ = ers(y, res, [1600,1600], model_800, pct_1600, n_fft=n_fft, hop_size=hop_size)        
 					end = timer()
 					result_OURS_1600 = end - start
 					print(result_OURS_1600)
@@ -193,17 +171,14 @@ def main(num_file):
 				except:
 					print("erro nos timers")
 
-				result_file = '../notebooks/cost-experiment/results/results_250820_ers_single.csv'
+				result_file = '../notebooks/cost-experiment/results/results_final_ers/results_ers_single.csv'
 
 				with open(result_file, 'a') as csvfile:
 					writer = csv.writer(csvfile, delimiter=';')
-					# writer.writerow([file, 'STFT', res_window[i], str(result_stft)])
-					# writer.writerow([file, 'CQT', res_window[i], str(result_cqt)])
-					# writer.writerow([file, 'SWGM', res_window[i], str(result_swgm)])
-					writer.writerow([file, 'economic 200', res_window[i], str(result_OURS_200), pct_200])
-					writer.writerow([file, 'economic 500', res_window[i], str(result_OURS_500), pct_500])
-					writer.writerow([file, 'economic 800', res_window[i], str(result_OURS_800), pct_800])
-					writer.writerow([file, 'economic 1600', res_window[i], str(result_OURS_1600), pct_1600])
+					writer.writerow([file, 'ers 200', res_window[i], str(result_OURS_200), pct_200])
+					writer.writerow([file, 'ers 500', res_window[i], str(result_OURS_500), pct_500])
+					writer.writerow([file, 'ers 800', res_window[i], str(result_OURS_800), pct_800])
+					writer.writerow([file, 'ers 1600', res_window[i], str(result_OURS_1600), pct_1600])
 					# writer.writerow([file, 'economic 2 lvl', res_window[i], str(result_OURS_2lvl), pct_multilevel_2])
 					# writer.writerow([file, 'economic 3 lvl', res_window[i], str(result_OURS_3lvl), pct_multilevel_3])
 					# writer.writerow([file, 'economic 4 lvl', res_window[i], str(result_OURS_4lvl), pct_multilevel_4])
