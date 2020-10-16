@@ -46,20 +46,20 @@ def main(num_file):
 	#     writer.writerow(['file name', 'representation', 'max res', 'timeit', 'pct refine'])
 	# print("csv overwritten")
 
-	pcts = pd.read_csv('../notebooks/cost-experiment/results/pcts_all_final.csv', sep=';', dtype={'pct_200':float, 'pct_500':float, 'pct_800':float, 'pct_1600':float})
+	pcts = pd.read_csv('../notebooks/cost-experiment/results/pcts_all_final.csv', index_col=0, dtype={'pct_200':float, 'pct_500':float, 'pct_800':float, 'pct_1600':float})
 	pcts = treat_pcts(pcts)
 
-	# file_names = []
-	# for year in ['2006','2008','2009','2011','2013','2014','2015']:
-	#     path = '/Volumes/HD-NICO/vaio-backup/Documents/ime/compmus/mestrado/maestro-v2.0.0/' + year + '/*.wav'
-	#     for file in glob.glob(path):
-	#         file_names.append(file[:-4])
-
 	file_names = []
-	for year in ['2004']:
-		path = '/Users/nicolas/Documents/ime/compmus/mestrado/maestro-dataset/' + year + '/*.wav'
-		for file in glob.glob(path):
-			file_names.append(file[:-4])
+	for year in ['2006','2008','2009','2011','2013','2014','2015']:
+	    path = '/Volumes/HD-NICO/vaio-backup/Documents/ime/compmus/mestrado/maestro-v2.0.0/' + year + '/*.wav'
+	    for file in glob.glob(path):
+	        file_names.append(file[:-4])
+
+	# file_names = []
+	# for year in ['2004']:
+	# 	path = '/Users/nicolas/Documents/ime/compmus/mestrado/maestro-dataset/' + year + '/*.wav'
+	# 	for file in glob.glob(path):
+	# 		file_names.append(file[:-4])
 
 	print("files fetched: ",len(file_names))
 
